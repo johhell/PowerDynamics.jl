@@ -1,4 +1,4 @@
-# On Voltage and Current Sources
+# [On Voltage and Current Sources](@id vc-and-cs)
 
 This document covers important concepts relating to the interplay between ModelingToolkit and NetworkDynamics.jl.
 Make sure to read the PowerDynamics docs on [Modeling Concepts](@ref) first.
@@ -49,15 +49,15 @@ However, we can use Kirchhoff's Current Law (KCL) to reformulate this as an impl
 ```math
 \begin{align}
    \tag{1a}i_{\mathrm{device}} &= Y(u_{\mathrm{device}} - u_{\mathrm{bus}})\\
-   \tab{1b}0 &= i_{\mathrm{device}} - i_{\mathrm{grid}}
+   \tag{1b}0 &= i_{\mathrm{device}} - i_{\mathrm{grid}}
 \end{align}
 ```
-The second equation here is an  implicit **constraint equation** for $u_{\mathrm{bus}}$: once you substitute (1a) in (1b)
+The second equation here is an implicit **constraint equation** for $u_{\mathrm{bus}}$: once you substitute (1a) in (1b)
 ```math
-   0 &= Y(u_{\mathrm{device}} - u_{\mathrm{bus}}) - i_{\mathrm{grid}}
+   0 = Y(u_{\mathrm{device}} - u_{\mathrm{bus}}) - i_{\mathrm{grid}}
 ```
-it becomes clear, that it is possible to fulfill the constraint by tweaking $u_{\mathrm{bus}}$.
-So the key here is, that $i_{\mathrm{device}}$ algebraically depends on $u_{\mathrm{bus}}$
+it becomes clear that it is possible to fulfill the constraint by tweaking $u_{\mathrm{bus}}$.
+The key is that $i_{\mathrm{device}}$ algebraically depends on $u_{\mathrm{bus}}$.
 This kind of modeling is quite typical for power grid simulations.
 It directly extends to the case where you have multiple injectors at a bus, there are just more current terms in the KCL.
 
@@ -96,14 +96,14 @@ which is solvable for $u_\mathrm{bus}$ again.
 Therefore, differential current output of a vertex is no problem after all, if the network happens to be algebraic.
 
 !!! tip "Tell NetworkDynamics to assume static lines"
-    Sometimes [`compile_bus`](@ref)/[`VertexModel`](@extref NetworkDynamics.VertexModel-Tuple{}) costructors will fail for such systems with errors referencing stuff like "singular system", "input derivative necessary" or "to many highest order equations". This is because at compile time it is not safe to assume algebraic feedback from the network.
+    Sometimes [`compile_bus`](@ref)/[`VertexModel`](@extref NetworkDynamics.VertexModel-Tuple{}) constructors will fail for such systems with errors referencing stuff like "singular system", "input derivative necessary" or "too many highest order equations". This is because at compile time it is not safe to assume algebraic feedback from the network.
     Use the `assume_io_coupling=true` keyword to inform MTK about the direct feedback relation $i_{\mathrm{grid}} = f(u_{\mathrm{bus}})$, which should solve most of the problems.
-    
+
 But what happens if you use dynamic line models too? In a dynamic RL line, the current on the line itself is a differential state.
 Now, solving the KCL becomes impossible -- there is no possible substitution such that $u_{\mathrm{bus}}$ appears in (2b).
 From a mathematical standpoint, we have created a higher-index DAE.
 
-Another way of thinking about that, is that we have two differential equations completely defining $i_{\mathrm{grid}}$ and $i_{\mathrm{device}}$ over time. But physicially, it is the same current. It is not possible to force the output of two differential equations to align.
+Another way of thinking about that is that we have two differential equations completely defining $i_{\mathrm{grid}}$ and $i_{\mathrm{device}}$ over time. But physically, it is the same current. It is not possible to force the output of two differential equations to align.
 
 There are two ways to resolve this:
 1. Replace the *algebraic* voltage state by a *differential* state.
@@ -128,12 +128,12 @@ The second solution introduces some algebraic current into the KCL:
 \end{aligned}
 ```
 This can be achieved by adding a (large) resistor to ground, for example.
-Since it does not matter if the algebraic current enters from the network side or the bus side, it is also possible to add (large) resitors to ground to the end terminals of the EMT powerlines.
+Since it does not matter if the algebraic current enters from the network side or the bus side, it is also possible to add (large) resistors to ground to the end terminals of the EMT powerlines.
 Either way, introducing some $f_i(u_\mathrm{bus})$ to the KCL resolves the problem.
 
 
 We explained the problem using the voltage-source-behind-impedance example.
-A similar issue arises when trying to define a dynamic pi-line (lines that have differentail equations over capacitors at both ends): you can't, because two connected pi-lines would define separate differential equations for the same bus voltage. You can work around this by using dynamic Tau-lines or by aggregating the dynamic shunts into the vertex models (i.e. define a single dynamic shunt at the bus whose capacity equals the sum of shunt capacitances of connected lines).
+A similar issue arises when trying to define a dynamic pi-line (lines that have differential equations over capacitors at both ends): you can't, because two connected pi-lines would define separate differential equations for the same bus voltage. You can work around this by using dynamic Tau-lines or by aggregating the dynamic shunts into the vertex models (i.e. define a single dynamic shunt at the bus whose capacity equals the sum of shunt capacitances of connected lines).
 
 Sometimes it is inconvenient to alter your device models by pulling helper elements like shunts into the vertex equations. For that use case, we have a dedicated mechanism: Current Injector Buses.
 
@@ -180,7 +180,7 @@ current │ i out        ╭─┴─╮          │  special      ⋅ flipped 
 
 A loopback connection is a special edge that **directly** connects vertices (similar to a zero-impedance line).
 The input-output system of the satellites is reversed: they see the hub voltage as input and inject current into the hub bus.
-It is called LoopBack because it directly loops back from the hubs output to the hubs input without going through a "real network" element.
+It is called LoopBack because it directly loops back from the hub's output to the hub's input without going through a "real network" element.
 Please check out the [`LoopbackConnection`](@extref NetworkDynamics.LoopbackConnection) docstring for more info.
 
 Often, the hub bus will be a pure junction bus (pure KCL constraint).
@@ -199,7 +199,7 @@ then as a 4-bus model using loopback connections.
 System A:
 ```asciiart
         1
-G1 (~)─┨           2 
+G1 (~)─┨           2
        ┠──────────┨─▷ L
 G2 (~)─┨
 ```
@@ -248,15 +248,15 @@ genp = (vf_input=false, τ_m_input=false, S_b=100, V_b=1, ω_b=2π*50, R_s=0.000
 @named genB = SauerPaiMachine(; genp...)
 nothing
 ```
-Constructing the KCL happens implicitly. Using The [`MTKBus`](@ref) constructor, we can create a bus model consisting of several injector models.
+Constructing the KCL happens implicitly. Using the [`MTKBus`](@ref) constructor, we can create a bus model consisting of several injector models.
 All terminals are connected, which forms the KCL.
 ```@example modelborders
 genABmod = MTKBus(genA, genB; name=:GEN1)
 @named genABbus = compile_bus(genABmod, pf=pfSlack(V=1))
 nothing # hide
 ```
-As a powerflow model we've chose an Slack.
-Here we hit a problem: our combined bus has a single slack powerflow model, but during initialization we know nothing about the power sharing between generators -- the init problem is underconstraint.
+As a powerflow model we've chosen a Slack.
+Here we hit a problem: our combined bus has a single slack powerflow model, but during initialization we know nothing about the power sharing between generators -- the init problem is underconstrained.
 We want the first generator to act as a slack and the second to act as a PQ node.
 We can achieve this by defining additional initialization constraints, which essentially force certain values for P and Q.
 Check out the docs on initialization in both Network- and PowerDynamics for more information on that.
