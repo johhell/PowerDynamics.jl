@@ -1,4 +1,4 @@
-# Model Borders (or: On Voltage and Current Sources)
+# On Voltage and Current Sources
 
 This document covers important concepts relating to the interplay between ModelingToolkit and NetworkDynamics.jl.
 Make sure to read the PowerDynamics docs on [Modeling Concepts](@ref) first.

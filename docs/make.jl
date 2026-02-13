@@ -53,7 +53,7 @@ kwargs = (;
         "Modeling Concepts" => "ModelingConcepts.md",
         "Initialization" => "initialization.md",
         "Component Library" => "Library.md",
-        "ModelBorders.md"
+        "vs_and_cs_models.md",
         "Tutorials" => [
             "Julia Setup for New Users" => "julia_setup.md",
             "Getting Started" => "generated/getting_started.md",
