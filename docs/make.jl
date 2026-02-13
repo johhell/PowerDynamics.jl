@@ -53,6 +53,7 @@ kwargs = (;
         "Modeling Concepts" => "ModelingConcepts.md",
         "Initialization" => "initialization.md",
         "Component Library" => "Library.md",
+        "ModelBorders.md"
         "Tutorials" => [
             "Julia Setup for New Users" => "julia_setup.md",
             "Getting Started" => "generated/getting_started.md",
@@ -68,6 +69,7 @@ kwargs = (;
             "IEEE39 Part IV: Parameter Tuning" => "generated/ieee39_part4.md",
             "EMT Toymodel" => "generated/emt_toymodel.md",
             "Zero-Impedance Circuit Breaker" => "generated/zero_imp_breaker.md",
+            "Linear Analysis (SimplusGT)" => "generated/linear_analysis.md",
         ],
         "API" => "API.md",
         "🔗 NetworkDynamics.jl Docs" => "networkdynamics_forward.md",

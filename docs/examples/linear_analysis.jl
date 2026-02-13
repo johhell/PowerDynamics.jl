@@ -1,10 +1,17 @@
+#=
+# [Linear Analysis of a 4-Bus System](@id linear-analysis)
 
-#
-# This model implements the SimplusGT SynchronousMachine Type 0 model:
-# "constant field flux, rotor motion of torque"
-#
-# This implementation stays as close as possible to the MATLAB original,
-# using the same parameter names, equations, and d-q reference frame convention.
+This example can be downloaded as a normal Julia script [here](@__NAME__.jl). #md
+
+This example demonstrates **eigenvalue analysis** and **impedance-based Bode analysis** of a
+mixed-technology 4-bus power system. The system parameters and topology are taken from
+[SimplusGT](https://github.com/Future-Power-Networks/Simplus-Grid-Tool) (Simplus Grid Tool),
+and eigenvalue results have been validated against the MATLAB reference.
+
+Please note that this tutorial only replicates a small part of what SimplusGT is capable of,
+so please check out this greate toolbox for in-depth linear analysis of powersystems!
+
+=#
 
 using PowerDynamics
 using PowerDynamics.Library
@@ -12,20 +19,25 @@ using PowerDynamics.Library.ComposableInverter
 using ModelingToolkit
 using ModelingToolkit: t_nounits as t, D_nounits as Dt
 using OrdinaryDiffEqRosenbrock
-using NetworkDynamics
 using OrdinaryDiffEqNonlinearSolve
+using NetworkDynamics
 using CairoMakie
+nothing #hide
 
-####
-#### Models
-####
+#=
+## Synchronous Machine with Stator Dynamics
+In order to replicate the results we need to use identical or nearly identical models to
+SimplusGT. For that we need to implement a different kind of synchronous machine that
+- retains the stator flux dynamics (i.e. defines the current output as an differential equation),
+- assumes constant field flux (parameter which is initialized at operation point) and
+- shows no governor dynamics (i.e. mechanical torque is a constant parameter initialized at operation point).
 
-
+The model matches the equations of the Type 0 Apparatus in SimplusGT.
+=#
 @mtkmodel SyncMachineStatorDynamics begin
     @components begin
         terminal = Terminal()
     end
-
     @parameters begin
         J, [description="Inertia constant [MWs²/MVA]"]
         D, [description="Damping coefficient [pu]"]
@@ -35,64 +47,107 @@ using CairoMakie
         psi_f, [guess=1, description="Field flux linkage [pu]"]
         T_m, [guess=1, description="Mechanical torque [pu]"]
     end
-
     @variables begin
-        # State variables
         i_d(t), [guess=0, description="d-axis stator current [pu]"]
         i_q(t), [guess=1, description="q-axis stator current [pu]"]
         w(t), [guess=2*pi*50, description="Rotor speed deviation [rad/s]"]
         theta(t), [guess=0, description="Rotor angle [rad]"]
-        # Algebraic variables
         v_d(t), [guess=1, description="d-axis terminal voltage [pu]"]
         v_q(t), [guess=0, description="q-axis terminal voltage [pu]"]
         psi_d(t), [guess=1, description="d-axis flux linkage [pu]"]
         psi_q(t), [guess=0, description="q-axis flux linkage [pu]"]
         Te(t), [guess=1, description="Electrical torque [pu]"]
     end
-
     begin
-        # Parameter scaling (MATLAB lines 56-59)
         J_pu = J*2/w0^2
         D_pu = D/w0^2
         L = wL/w0
-
         T_to_loc(α)  = [ cos(α) sin(α);
-                         -sin(α)  cos(α)]
+                        -sin(α)  cos(α)]
         T_to_glob(α) = T_to_loc(-α)
     end
-
     @equations begin
-        # Coordinate transformations (q-axis aligned with field flux, MATLAB convention)
+        # output transformation (global dq/local dq)
         [terminal.i_r, terminal.i_i] .~ -T_to_glob(theta)*[i_d, i_q]
         [v_d, v_q] .~ T_to_loc(theta)*[terminal.u_r, terminal.u_i]
-
-        # Flux linkages (MATLAB lines 72-73)
+        # electromechical equations
         psi_d ~ L*i_d
         psi_q ~ L*i_q - psi_f
-
-        # Electrical torque (MATLAB line 74)
         Te ~ psi_f * i_d
-
-        # State equations - Type 0 (MATLAB lines 75-78)
         Dt(i_d) ~ (v_d - R*i_d + w*psi_q)/L
         Dt(i_q) ~ (v_q - R*i_q - w*psi_d)/L
+        # swing equation
         Dt(w) ~ (Te - T_m - D_pu*w)/J_pu
         Dt(theta) ~ w - w0
     end
 end
+nothing #hide #md
 
-####
-####  4 Bus example
-####
-## Network from SimplusGT UserData.json:
-## Bus 1: SG Type 0 (slack), Bus 2: SG Type 0 (PV),
-## Bus 3: GFM Type 20 (PV), Bus 4: GFL Type 10 (PQ)
-## Lines: 1→2, 2→3, 3→1 (R=0.01, wL=0.3), 3→4 (R=0.01, wL=0.3, turns_ratio=0.99)
-## Self-branch shunts: Bus 1,2: G=0.6, wC=1e-5; Bus 3: G=0.75; Bus 4: G=0.05
-using PowerDynamics.Library.ComposableInverter
+#=
+## 4-Bus Network Setup
+
+The network replicates the default 4-bus example from SimplusGT's `UserData.json`:
+
+| Bus | Device | PF Type | Key Parameters |
+|:----|:-------|:--------|:---------------|
+| 1 | SG Type 0 | Slack (V=1) | J=3.5, D=1, wL=0.05, R=0.01 |
+| 2 | SG Type 0 | PV (P=0.5, V=1) | J=3.5, D=1, wL=0.05, R=0.01 |
+| 3 | GFM Type 20 (Droop, LCL) | PV (P=0.5, V=1) | Droop + voltage/current control |
+| 4 | GFL Type 10 (DC-link) | PQ (P=0.5, Q=-0.2) | PLL + DC voltage control |
+
+Lines 1↔2, 2↔3, 3↔1 have R=0.01, wL=0.3. Line 3→4 adds a turns ratio of 0.99.
+
+!!! note EMT Models
+    The entire modeling in SimplusGT uses **EMT Components**, meaning that there is no
+    static dq-phasor calculation like `i_dq = Z_dq⋅u_dq`. Instead, every   mod
+
+### Current Source Buses and Loopback Connections
+
+SimplusGT models each device as a transfer function from bus voltage to injected current
+(an admittance ``Y(s)``), and closes the loop through the network admittance matrix.
+
+```asciiart
+             (Admittance-like)
+            ╭────────────────╮
+δu_dq╶─→●──→┤ Device TF G(s) ├→───●──╴ i_dq
+        │   ╰────────────────╯    │
+        │                         │
+        │   ╭────────────────╮    │
+(bus    ╰──←┤  Grid TF Z(s)  ├←───╯
+ voltage)   ╰────────────────╯
+             (Impedance-like)
+```
+
+
+
+```
+╭─────────╮                       ╭──╴Powerline 1
+│ Current │          Vbus         │
+│ Source  ├────→──────●────←──────●
+│ Device  │ i_device  ┴  i_grid   │
+╰─────────╯           ┬           ╰──╴Powerline 2
+                      ⏚
+
+```
+
+For
+impedance-based stability analysis, they directionally perturb the voltage input of a
+device *without* simultaneously perturbing that voltage point in the network -- effectively
+opening the loop at that bus.
+
+We replicate this using the current-source bus + loopback pattern: each device bus
+(`current_source=true`) is paired with a network bus carrying a `DynamicRCShunt` via a
+[`LoopbackConnection`](@extref NetworkDynamics.LoopbackConnection). This gives us separate
+voltage/current access points that can be independently targeted by
+[`linearize_network`](@extref NetworkDynamics.linearize_network). See [Injector
+Nodes](@extref injector-nodes) in the NetworkDynamics.jl docs for background on this pattern.
+=#
+
 w0 = 2π*50
 
-## ===== Bus 1: SG Type 0 (Slack for PF) =====
+#=
+### Bus 1: Synchronous Generator (Slack)
+=#
 sg1_bus, bus1, loop1 = let
     @named sm = SyncMachineStatorDynamics(J=3.5, D=1, wL=0.05, R=0.01, w0=w0)
     @named sg1_bus = compile_bus(MTKBus(sm); current_source=true)
@@ -106,8 +161,11 @@ sg1_bus, bus1, loop1 = let
 
     sg1_bus, bus1, loop1
 end
+nothing #hide #md
 
-## ===== Bus 2: SG Type 0 (PV for PF) =====
+#=
+### Bus 2: Synchronous Generator (PV)
+=#
 sg2_bus, bus2, loop2 = let
     @named sm = SyncMachineStatorDynamics(J=3.5, D=1, wL=0.05, R=0.01, w0=w0)
     @named sg2_bus = compile_bus(MTKBus(sm); current_source=true)
@@ -121,10 +179,17 @@ sg2_bus, bus2, loop2 = let
 
     sg2_bus, bus2, loop2
 end
+nothing #hide #md
 
-## ===== Bus 3: GFM Type 20 (PV for PF) =====
+#=
+### Bus 3: Grid-Forming Inverter (Droop + LCL)
+
+The GFM uses a [`DroopInverter`](@ref ComposableInverter.DroopInverter) with LCL filter.
+Parameters are converted from SimplusGT bandwidth conventions: frequency bandwidths
+(e.g. `xfidq=600` Hz) are mapped to PI gains, and cross-coupling feedforward is disabled
+(`Fcoupl=0`) to match the MATLAB reference.
+=#
 gfm_bus, bus3, loop3 = let
-    # Parameters from JSON
     xwLf=0.05; Rf=0.01; xwCf=0.02; xwLc=0.01; Rc=0.002
     Xov=0.01; xDw=0.05; xfdroop=5; xfvdq=300; xfidq=600
 
@@ -154,9 +219,6 @@ gfm_bus, bus3, loop3 = let
         vsrc₊Rg = Rc,
     )
     @named gfm_bus = compile_bus(MTKBus(droop); current_source=true)
-
-
-
     set_pfmodel!(gfm_bus, pfPV(P=0.5, V=1; current_source=true, assume_io_coupling=true))
 
     @named shunt = DynamicRCShunt(R=1/0.75, C=1e-5, ω0=w0)
@@ -167,10 +229,15 @@ gfm_bus, bus3, loop3 = let
 
     gfm_bus, bus3, loop3
 end
+nothing #hide #md
 
-## ===== Bus 4: GFL Type 10 with DC-link (PQ for PF) =====
+#=
+### Bus 4: Grid-Following Inverter (DC-link)
+
+The GFL uses a [`SimpleGFLDC`](@ref ComposableInverter.SimpleGFLDC) model with DC-link
+dynamics, L filter, PLL with low-pass filter, and current controller.
+=#
 gfl_bus, bus4, loop4 = let
-    # Parameters from JSON
     V_dc=2.5; C_dc=1.25; f_v_dc=5
     xwLf=0.03; Rf=0.01
     f_pll=5; f_tau_pll=300; f_i_dq=600
@@ -192,8 +259,6 @@ gfl_bus, bus4, loop4 = let
         ki_v_dc = V_dc*C_dc*(f_v_dc*2*pi) * (f_v_dc*2*pi)/4,
     )
     @named gfl_bus = compile_bus(MTKBus(gfl); current_source=true)
-
-
     set_pfmodel!(gfl_bus, pfPQ(P=0.5, Q=-0.2; current_source=true))
 
     @named shunt = DynamicRCShunt(R=1/0.05, C=1e-5, ω0=w0)
@@ -204,8 +269,15 @@ gfl_bus, bus4, loop4 = let
 
     gfl_bus, bus4, loop4
 end
+nothing #hide #md
 
-## ===== Lines =====
+#=
+## Transmission Lines
+
+All lines use [`DynamicRLBranch`](@ref) (dynamic RL in the rotating dq-frame).
+Line 3→4 includes a turns ratio of 0.99. Static [`PiLine`](@ref) models are attached
+for the power flow solver.
+=#
 line12 = let
     @named branch = DynamicRLBranch(R=0.01, L=0.3, ω0=w0)
     lm = compile_line(MTKLine(branch); name=:l12, src=:bus1, dst=:bus2)
@@ -241,23 +313,30 @@ line34 = let
     set_pfmodel!(lm, pfmod)
     lm
 end
+nothing #hide #md
 
+#=
+## Network Assembly and Initialization
 
-## ===== Network =====
+We assemble the network from 8 vertex models (4 device buses + 4 network buses),
+4 loopback connections, and 4 transmission lines. Power flow is solved and used to
+initialize all dynamic states.
+=#
 nw = Network([sg1_bus, bus1, sg2_bus, bus2, gfm_bus, bus3, gfl_bus, bus4],
-             [loop1, loop2, loop3, loop4, line12, line23, line31, line34]; warn_order=false)
-# pfs0 = NWState(powerflow_model(nw))
-# uflat(pfs0) .= -0.1
-
-pfnw = powerflow_model(nw)
-pfs0 = NWState(pfnw)
+    [loop1, loop2, loop3, loop4, line12, line23, line31, line34]; warn_order=false)
 
 pfs = solve_powerflow(nw; abstol=1e-10, reltol=1e-10)
 show_powerflow(pfs)
 s0 = initialize_from_pf!(nw; pfs, subverbose=true, tol=1e-7, nwtol=1e-7)
+nothing #hide #md
 
+#=
+## Eigenvalue Analysis
 
-## ===== Eigenvalue analysis =====
+[`jacobian_eigenvals`](@extref NetworkDynamics.jacobian_eigenvals) linearizes the system,
+eliminates algebraic constraints via Schur complement, and returns the eigenvalues of the
+reduced state matrix. We divide by ``2\pi`` to convert from rad/s to Hz.
+=#
 eigenvalues = jacobian_eigenvals(nw, s0) ./ (2 * pi)
 println("4-Bus Eigenvalues:")
 display(eigenvalues)
@@ -272,10 +351,26 @@ let
     fig
 end
 
+#=
+!!! details "SimplusGT Reference: Pole Map"
+    *Reference plot not yet exported. Will be added in a future update.*
+=#
 
-####
-#### Transfer Function Analysis
-####
+#=
+## Impedance-Based Bode Analysis
+
+SimplusGT models each device as a transfer function from bus voltage to injected current
+(an admittance ``Y(s)``), and closes the loop through the network admittance matrix.
+For impedance-based stability analysis, they directionally perturb the voltage input of a
+device *without* perturbing that voltage point in the network -- effectively opening the
+loop at that bus.
+
+We replicate this using `linearize_network` with `in` and `out` keyword arguments. By
+specifying the voltage states of a device bus as inputs and the current states as outputs,
+we obtain the device admittance transfer function ``Y_{dd}(s)``. The loopback connection
+topology naturally provides the separation: perturbing the voltage input of the device bus
+does not simultaneously perturb the network bus voltage.
+=#
 
 function bode_plot(Gs, title="", labels=["Bus $i" for i in 1:length(Gs)])
     with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
@@ -299,22 +394,34 @@ function bode_plot(Gs, title="", labels=["Bus $i" for i in 1:length(Gs)])
         fig
     end
 end
+nothing #hide #md
 
+# Each device's admittance is obtained by linearizing with voltage as input and current as output.
 Gs = map([:sg1_bus, :sg2_bus, :gfm_bus, :gfl_bus]) do COMP
     vs = VIndex(COMP, [:busbar₊u_r, :busbar₊u_i])
     cs = VIndex(COMP, [:busbar₊i_r, :busbar₊i_i])
     G = NetworkDynamics.linearize_network(nw, s0; in=vs, out=cs).G
-    # s -> -G(s)
 end
 bode_plot(Gs, "Y_dd ")
 
-# perturbation
+#=
+!!! details "SimplusGT Reference: Bode Plot"
+    *Reference plot not yet exported. Will be added in a future update.*
+=#
+
+#=
+## Time-Domain Simulation
+
+We validate the linearization results against a nonlinear time-domain simulation.
+A three-phase short circuit is applied at Bus 1 (shunt resistance reduced to near-zero)
+at t=0.1s and cleared at t=0.2s.
+=#
 affect = ComponentAffect([], [:shunt₊R]) do u, p, ctx
     if ctx.t == 0.1
-        println("Short Circuit at Bus 1 at t=1.0s")
-        p[:shunt₊R] = 1e-6 # prevent singularity
+        println("Short Circuit at Bus 1 at t=0.1s")
+        p[:shunt₊R] = 1e-6
     elseif ctx.t == 0.2
-        println("Clearing Short Circuit at Bus 1 at t=1.1s")
+        println("Clearing Short Circuit at Bus 1 at t=0.2s")
         p[:shunt₊R] = 1/0.6
     end
 end
@@ -323,6 +430,7 @@ short = PresetTimeComponentCallback([0.1, 0.2], affect)
 prob = ODEProblem(nw, s0, (0,30); add_comp_cb=VIndex(:bus1)=>short)
 sol = solve(prob, Rodas5P())
 
+# ### Voltage Response
 with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
     fig = Figure()
     ax = Axis(fig[1,1], title="Voltage Magnitude", limits=((0,0.5), (0.0, 1.2)))
@@ -339,3 +447,8 @@ with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
     axislegend(ax2; position=:rb)
     fig
 end
+
+#=
+!!! details "SimplusGT Reference: Short Circuit Response"
+    *Reference plot not yet exported. Will be added in a future update.*
+=#
