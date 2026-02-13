@@ -513,4 +513,56 @@ end
     ![image](../assets/SimplusGTPlots/Voltage_Trajectory.png)
 =#
 
+#=
 
+=#
+
+using FFTA
+using Statistics
+dt = 0.001
+# ts = 5:dt:30
+ts = 0.1:dt:30
+umag = sol(ts, idxs=VIndex(:bus3, :busbar₊u_mag)).u
+
+#=
+## Power Spectrum Analysis
+Compute the power spectrum of the voltage magnitude to identify dominant frequencies.
+=#
+fs = 1/dt            # sampling frequency [Hz]
+N = length(umag)
+
+# Apply Hann window to reduce spectral leakage
+hann_window = 0.5 .- 0.5 .* cos.(2π .* (0:N-1) ./ (N-1))
+umag_windowed = (umag .- mean(umag)) .* hann_window
+
+# Compute FFT and power spectrum
+fft_result = fft(umag_windowed)
+power_fft = abs.(fft_result).^2 / N
+
+# Positive frequencies only
+power = power_fft[1:N÷2]
+freqs_hz = (0:N÷2-1) .* (fs/N)
+
+let
+    fig = Figure(size=(600,500))
+    ax1 = Axis(fig[1, 1], xlabel="Real Part [Hz]", ylabel="Imaginary Part [Hz]",
+               title="Pole Map with Power Spectrum Overlay", xscale=CairoMakie.Makie.pseudolog10)
+    xlims!(ax1, -10, 0.1); ylims!(ax1, -10, 10)
+    candidate = eigenvalues[end-2]
+    scatter!(ax1, real(candidate), imag(candidate),color=:red, markersize=50, alpha=0.3)
+    lines!(ax1, -10*power, freqs_hz, label="Power Spectrum (scaled)", color=Cycled(2))
+    scatter!(ax1, real.(eigenvalues), imag.(eigenvalues), marker=:xcross, label="Eigenvalues")
+    axislegend(ax1; position=:rb)
+    fig
+end
+
+pfc = participation_factors(s0)
+pfc_sel = (; eigenvalues=pfc.eigenvalues[end-4:end], pfactors=pfc.pfactors[:, end-4:end], state_syms=pfc.state_syms)
+show_participation_factors(pfc_sel)
+
+# TODO:
+# parameter sensitivity
+# maybe focus on a mode in the inverters instead
+# check participation facors for mode
+# see which parameter influences the mode  (aroow plot?)
+# change parameter and rerun the simulation
