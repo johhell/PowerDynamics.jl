@@ -22,15 +22,15 @@ In order to replicate the results from SimplusGT we need to use identical or nea
 SimplusGT. Most of the models needed are present in our Library, we still need to implement a custom machine model though.
 Since modeling is not the focus on this tutorial, it is provide without any further explaination.
 
-```@raw html
-<details class="admonition is-details">
-<summary class="admonition-header">Definition of custom Machine Model</summary>
-<div class="admonition-body">
+```@raw html #md
+<details class="admonition is-details"> #md
+<summary class="admonition-header">Definition of custom Machine Model</summary> #md
+<div class="admonition-body"> #md
 SimplusGT uses a special machine model for their Type 0 Apparatus which:
 - retains the stator flux dynamics (i.e. defines the current output as an differential equation),
 - assumes constant field flux (parameter which is initialized at operation point) and
 - contains no governor dynamics (i.e. mechanical torque is a constant parameter initialized at operation point).
-```
+``` #md
 =#
 using PowerDynamics
 using PowerDynamics.Library
@@ -75,16 +75,16 @@ using CairoMakie
         T_to_glob(α) = T_to_loc(-α)
     end
     @equations begin
-        # output transformation (global dq/local dq)
+        ## output transformation (global dq/local dq)
         [terminal.i_r, terminal.i_i] .~ -T_to_glob(theta)*[i_d, i_q]
         [v_d, v_q] .~ T_to_loc(theta)*[terminal.u_r, terminal.u_i]
-        # electromechical equations
+        ## electromechical equations
         psi_d ~ L*i_d
         psi_q ~ L*i_q - psi_f
         Te ~ psi_f * i_d
         Dt(i_d) ~ (v_d - R*i_d + w*psi_q)/L
         Dt(i_q) ~ (v_q - R*i_q - w*psi_d)/L
-        # swing equation
+        ## swing equation
         Dt(w) ~ (Te - T_m - D_pu*w)/J_pu
         Dt(theta) ~ w - ω0
     end
@@ -92,10 +92,10 @@ end
 nothing #hide #md
 
 #=
-```@raw html
-</div>
-</details>
-```
+```@raw html #md
+</div> #md
+</details> #md
+``` #md
 
 ## 4-Bus Network Setup
 The topolgoy of the network looks like this:
@@ -115,25 +115,26 @@ a grid forming droop inverter and one has a grid following inverter.
 !!! note "EMT Models"
     The entire modeling in SimplusGT uses **EMT Components**, meaning that the powerlines
     are modeled using [`DynamicRLBranch`](@ref) models. At each of the buses there is
-    shunt consisting of a parallel capacitor and resistor.
+    shunt consisting of a parallel capacitor and resistor ([`DynamicRCShunt`](@ref)).
 
 Since the devices are all natural current sources and we have explicit shunts at all
 buses (self-edges in SimplusGT data), we use current source modeling accoding to the docs [on voltage and current sources](@ref vc-and-cs)
 Specificially, we model each bus using the RC-shunt.
-The devices are connected to those "shut buses" as current sources via [`LoopbackConnection`](@extref NetworkDynamics.LoopbackConnection) components.
+The devices are connected to those "shunt buses" as current sources via [`LoopbackConnection`](@extref NetworkDynamics.LoopbackConnection) components.
 
-So in the end we get "interconnected" models of the form.
+So in the end we get interconnected models of the following form form.
 This is important for the definition of our perturbation ports later on.
 
 ```asciiart
                ╭────────────────┬───────────╮
                │        voltage │ u out     │
 ┏━━━━━━━━━━━━━━▽━━┓   ╔═════════△════════╗  │   ╔═══════════════╗
-┃ Rest of Network ┃   ║ Shunt-Model      ║  ╰───▷ Device-Model  ║
-┃ - voltage in    ┃   ║ - current sum in ║      ║ - voltage in  ║
-┃ - current out   ┃   ║ - voltage out    ║  ╭───◁ - current out ║
-┗━━━━━━━━━━━━━━▽━━┛   ╚═════════△════════╝  │   ╚═══════════════╝
-       current │ i out        ╭─┴─╮         │
+┃ Rest of Network ┃   ║ VertexModel:     ║  ╰───▷ Vertex-Model: ║
+┃ - voltage in    ┃   ║  Shunt-Model     ║      ║  Device       ║
+┃ - current out   ┃   ║ - current sum in ║      ║ - voltage in  ║
+┗━━━━━━━━━━━━━━▽━━┛   ║ - voltage out    ║  ╭───◁ - current out ║
+               │      ╚═════════△════════╝  │   ╚═══════════════╝
+       current │ i out        ╭─┴─╮         │  (direct connection via loopback)
                ╰──────────────▷ + ◁─────────╯
                               ╰───╯
 ```
@@ -144,7 +145,11 @@ For each model we define two buses:
 - the device bus (machine or inverter model, Slack, PV or PQ model for powerflow) and
 - the loopback connection connecting the current-source device to the shunt bus.
 
-### Bus 1: Synchronous Generator (Slack)
+### Bus 1 & 2: Synchronous Generators
+Bus 1 and 2 are modeld using the prviously defined `SyncMachineStatorDynamics` model.
+The parameters are taken from the Simplus GT example.
+During Powerflow, the first machine is modeled as a slack bus, the second one as a PV bus.
+In both cases, we use current source modeling and connecting the device to a dynamic shunt bus (which acts like a static shunt during powerflow).
 =#
 ω0 = 2π*50
 sg1_bus, bus1, loop1 = let
@@ -160,11 +165,7 @@ sg1_bus, bus1, loop1 = let
 
     sg1_bus, bus1, loop1
 end
-nothing #hide #md
 
-#=
-### Bus 2: Synchronous Generator (PV)
-=#
 sg2_bus, bus2, loop2 = let
     @named sm = SyncMachineStatorDynamics(J=3.5, D=1, wL=0.05, R=0.01, ω0=ω0)
     @named sg2_bus = compile_bus(MTKBus(sm); current_source=true)
@@ -181,13 +182,15 @@ end
 nothing #hide #md
 
 #=
-### Bus 3: Grid-Forming Inverter (Droop + LCL)
+### Bus 3: Grid-Forming Inverter
 
 The GFM uses a [`DroopInverter`](@ref ComposableInverter.DroopInverter) with LCL filter with
 cascaded PI controllers for current and voltage in the filter.
 The parameters are converted from SimplusGT bandwidth conventions: frequency bandwidths
 (e.g. `xfidq=600` Hz) are mapped to PI gains, and cross-coupling feedforward is disabled
 (`Fcoupl=0`) to match the MATLAB reference.
+
+The GFI acts like a PV bus during powerflow and is once again modeld as a current injector connected to a dynamic shunt bus.
 =#
 gfm_bus, bus3, loop3 = let
     xwLf=0.05; Rf=0.01; xwCf=0.02; xwLc=0.01; Rc=0.002
@@ -232,10 +235,11 @@ end
 nothing #hide #md
 
 #=
-### Bus 4: Grid-Following Inverter (DC-link)
+### Bus 4: Grid-Following Inverter
 
 The GFL uses a [`SimpleGFLDC`](@ref ComposableInverter.SimpleGFLDC) model with DC-link
 dynamics, L filter, PLL with low-pass filter, and current controller.
+The parameters are obtained from the SimplusGT model. During powerflow, the GFL acts like a PQ bus.
 =#
 gfl_bus, bus4, loop4 = let
     V_dc=2.5; C_dc=1.25; f_v_dc=5
@@ -275,8 +279,8 @@ nothing #hide #md
 ## Transmission Lines
 
 All lines use [`DynamicRLBranch`](@ref) (dynamic RL in the rotating dq-frame).
-Line 3→4 includes a turns ratio of 0.99. Static [`PiLine`](@ref) models are attached
-for the power flow solver.
+Line 3→4 includes a turns ratio of 0.99 in accordance with the SimplusGT model.
+Static [`PiLine`](@ref) models are attached for the power flow solver.
 =#
 line12 = let
     @named branch = DynamicRLBranch(R=0.01, L=0.3, ω0=ω0)
@@ -319,6 +323,7 @@ nothing #hide #md
 ## Network Assembly and Initialization
 
 We assemble the network from 8 vertex models (4 device buses + 4 network buses),
+
 4 loopback connections, and 4 transmission lines. Power flow is solved and used to
 initialize all dynamic states.
 
@@ -335,24 +340,40 @@ nothing #hide #md
 #=
 ## Eigenvalue Analysis
 
-[`jacobian_eigenvals`](@extref NetworkDynamics.jacobian_eigenvals) linearizes the system,
+The ND.jl function [`jacobian_eigenvals`](@extref NetworkDynamics.jacobian_eigenvals) linearizes the system,
 eliminates algebraic constraints via Schur complement, and returns the eigenvalues of the
 reduced state matrix. We divide by ``2\pi`` to convert from rad/s to Hz.
+We plot the eigenvalues in the complex plane to get the global pole map of the system.
 =#
 eigenvalues = jacobian_eigenvals(nw, s0) ./ (2 * pi)
+nothing #hide
 
-let
-    fig = Figure(size=(600,500))
+
+#=
+```@raw html #md
+<details class="admonition is-details"> #md
+<summary class="admonition-header">Polemap plotting code</summary> #md
+<div class="admonition-body"> #md
+``` #md
+=#
+fig = let
+    fig = Figure(size=(600,400))
     ax1 = Axis(fig[1, 1], xlabel="Real Part [Hz]", ylabel="Imaginary Part [Hz]", title="Global Pole Map")
     scatter!(ax1, real.(eigenvalues), imag.(eigenvalues), marker=:xcross)
     ax2 = Axis(fig[1, 2], xlabel="Real Part [Hz]", ylabel="Imaginary Part [Hz]", title="Zoomed In")
     scatter!(ax2, real.(eigenvalues), imag.(eigenvalues), marker=:xcross)
     xlims!(ax2, -80, 20); ylims!(ax2, -150, 150)
     fig
-end
+end;
+#=
+```@raw html #md
+</div></details> #md
+``` #md
+=#
+fig # hide
 
 #=
-The results match what we get from SimplusGT.
+The results match what we get from SimplusGT for that system.
 
 !!! details "SimplusGT Reference: Pole Map"
     ![image](../assets/SimplusGTPlots/Figure_100.png)
@@ -382,7 +403,7 @@ loop at that bus.
 
 This kind of analysis can be replicated using the [`linearize_network`](@extref NetworkDynamics.linearize_network-Tuple{})
 function while proviing the `in` and `out` keyword aguments.
-With `in` it is possible to specify the perturbation port, `out` defines the observed stated under this output.
+With `in` it is possible to specify the perturbation port, `out` defines the observed stated under this perturbation.
 
 Perturbation in the linearization sense is *directed*, our device models however are fully acausal, there is
 no directionality within their definition.
@@ -410,55 +431,79 @@ for directional perturbation injection, 4 of which are unique:
 - `δu_in (device)`: Perturbation of the voltage at the device input (perturbs device)
 - `δi_out (line)`, `δi_out (hub)` and `δi_out (device)`: Perturbation of the current before or after aggregation. Mathematicially equivalent, only the hub input either way.
 
+The linearization of the full, nonlinear system $\mathrm{M} \dot{x} = f(x)$
+is done via automatic differentiation around the operating point $x_0$ with respect to the input and output channels $u$ and $y$ as defined by the `in` and `out` arguments. This results in a linear descriptor system of the form
+```math
+\begin{aligned}
+\mathrm{M} \dot{x} &= \frac{\partial f}{\partial x}\bigg|_{x_0}\delta x + \frac{\partial f}{\partial u}\bigg|_{x_0}\delta u &= \mathrm{A} \delta x + \mathrm{B}\delta u\\
+\delta y &= \frac{\partial g}{\partial x}\bigg|_{x_0}\delta x + \frac{\partial g}{\partial u}\bigg|_{x_0}\delta u &= \mathrm{C} \delta x + \mathrm{D}\delta u
+\end{aligned}
+```
+
+### $d$-Component Bus Admittance $Y_{dd}$
+
 First, we are interested in the $Y_{dd}(s)$ admittance, which is the transfer function from `δu_in (device)` to the device output.
 I.e. we perturb the input voltage for the device model and observe the change in current output. This is directly
 equivalent to the ports used in SimplusGT shown above.
 
-Since we are only interested in $Y_dd$ for now, we get away with a SISO system. We just specify a single perturbance
+Since we are only interested in $Y_{dd}$ for now, we get away with a SISO system. We just specify a single perturbance
 and single obsered channel:
 =#
 (; M, A, B, C, D, G) = linearize_network(nw, s0; in=VIndex(:sg1_bus, :busbar₊u_r), out=VIndex(:sg1_bus, :busbar₊i_r))
 nothing #hide
 #=
+!!! note "Frame Naming Conventions: $dq$ vs $ri$"
+    To match the conventional naming in Literature and SimplusGT we use $dq$ a lot thoutout this tutorial. Note however, that
+    the actual channels are called `u_r`, `u_i`, `i_r` and `i_i`. This is because per convention PowerDynamics uses $ri$ (real/imaginary) naming for the
+    *global* and *fixed frequency* dq-frame to distinguish it from the local dq frames commonly used in machine and inverter models.
+
 We get back a named tuple representing our descriptor system. It contains all matrices as well as a `G(s)` transfer function.
 You can use the matrices to construct systems in ControlSystems.jl or use other libraries to work with them.
-Here, we are only intersted in the transfer function. Since we can evaluate that directly:
+Here, our goal is to create a bodeplot of our system. To avoid additional dependencies, we direclty use the output `G` to sample and plot the frequency response of the system.
+
+First, we need to obtain the admittance transfer functions for all 4 devices, then we can plot the bode plot.
 =#
-G(im*2π*50)
-#=
-We can define our own bode plotting function without depending on additional external libraries:
-=#
-function bode_plot(Gs, title="", labels=["Bus $i" for i in 1:length(Gs)])
-    ## make colors match the matlab plot better
-    with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
-        fig = Figure(; size=(800, 600))
-        Label(fig[1, 1], title*"Bode Plot", fontsize=16, halign=:center, tellwidth=false)
-        ax1 = Axis(fig[2, 1], xlabel="Frequency (rad/s)", ylabel="Gain (dB)", xscale=log10)
-        ax2 = Axis(fig[3, 1], xlabel="Frequency (rad/s)", ylabel="Phase (deg)", xscale=log10)
-        for (G, label) in zip(Gs, labels)
-            fs = 10 .^ (range(log10(1e-1), log10(1e4); length=1000))
-            ωs = 2π * fs
-            ss = im .* ωs
-            gains = map(s -> 20 * log10(abs(G(s))), ss)
-            phases = rad2deg.(unwrap_rad(map(s -> angle(G(s)), ss)))
-            lines!(ax1, fs, gains; label, linewidth=2)
-            lines!(ax2, fs, phases; label, linewidth=2)
-        end
-        axislegend(ax1)
-        fig
-    end
-end
-nothing #hide #md
-#=
-In order to reproduce the $Y_{dd}$ bode plot, we just need to generate the linearization around
-every component and plot the results.
-=#
+
 Gs = map([:sg1_bus, :sg2_bus, :gfm_bus, :gfl_bus]) do COMP
     vs = VIndex(COMP, :busbar₊u_r)
     cs = VIndex(COMP, :busbar₊i_r)
     G = NetworkDynamics.linearize_network(nw, s0; in=vs, out=cs).G
 end
-bode_plot(Gs, "Y_dd ")
+nothing # hide
+#=
+```@raw html #md
+<details class="admonition is-details"> #md
+<summary class="admonition-header">Bode plot code</summary> #md
+<div class="admonition-body"> #md
+<div>
+```
+=#
+
+fig = with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
+    ## we use the theme to get closer to matlab colors
+    fig = Figure(; size=(800, 600))
+    Label(fig[1, 1], "Y_{dd} Bode Plot", halign=:center, tellwidth=false)
+    ax1 = Axis(fig[2, 1], xlabel="Frequency (rad/s)", ylabel="Gain (dB)", xscale=log10)
+    ax2 = Axis(fig[3, 1], xlabel="Frequency (rad/s)", ylabel="Phase (deg)", xscale=log10)
+    labels=["Bus $i" for i in 1:length(Gs)]
+    for (G, label) in zip(Gs, labels)
+        fs = 10 .^ (range(log10(1e-1), log10(1e4); length=1000))
+        jωs = 2π * fs * im
+        gains = map(s -> 20 * log10(abs(G(s))), jωs)
+        phases = rad2deg.(unwrap_rad(map(s -> angle(G(s)), jωs)))
+        lines!(ax1, fs, gains; label, linewidth=2)
+        lines!(ax2, fs, phases; label, linewidth=2)
+    end
+    axislegend(ax1)
+    fig
+end
+nothing #hide #md
+#=
+```@raw html #md
+</div></details> #md
+``` #md
+=#
+fig #hide #md
 
 #=
 There is a small difference in unwrapping algorithm, but besides that we nicely replicate the results from SimplusGT.
@@ -468,9 +513,135 @@ There is a small difference in unwrapping algorithm, but besides that we nicely 
 =#
 
 #=
+### Complex Bus Admittance $Y_{dq+}$
+
+The ``Y_{dd}`` plot above shows only the d-axis to d-axis coupling. To analyze
+**sequence-dependent behavior**, we transform the full 2×2 dq admittance matrix
+into complex vector form.
+
+In the dq-frame, the admittance is a 2×2 real-valued transfer function matrix:
+
+```math
+\mathbf{Y}_{dq}(s) = \begin{bmatrix} Y_{dd}(s) & Y_{dq}(s) \\ Y_{qd}(s) & Y_{qq}(s) \end{bmatrix}
+```
+
+We apply the complex vector transformation:
+
+```math
+\mathbf{Y}_{\text{complex}}(s) = \mathbf{T} \cdot \mathbf{Y}_{dq}(s) \cdot \mathbf{T}^{-1}
+```
+
+where
+
+```math
+\mathbf{T} = \begin{bmatrix} 1 & \phantom{-}j \\ 1 & -j \end{bmatrix}, \quad
+\mathbf{T}^{-1} = \frac{1}{2}\begin{bmatrix} \phantom{-}1 & 1 \\ -j & j \end{bmatrix}
+```
+
+The resulting matrix separates positive and negative sequence components:
+
+```math
+\mathbf{Y}_{\text{complex}}(s) = \begin{bmatrix} Y_{dq+}(s) & Y_{+-}(s) \\ Y_{-+}(s) & Y_{dq-}(s) \end{bmatrix}
+```
+
+where:
+- ``Y_{dq+}(s)`` is the **positive sequence** (forward-rotating) admittance
+- ``Y_{dq-}(s)`` is the **negative sequence** (backward-rotating) admittance
+- Off-diagonal terms represent sequence coupling
+
+For a perfectly balanced, symmetric system, ``Y_{dq+}(j\omega) = Y_{dq+}(-j\omega)``.
+However, systems with PLLs, rotating reference frames, or sequence-dependent control
+exhibit **asymmetry**: ``Y_{dq+}(j\omega) \neq Y_{dq+}(-j\omega)``. This is why we
+plot over both positive and negative frequencies.
+
+First, we map over all devices again, get the full $u_{dq} \mapsto i_{dq}$ transfer function then calculate $Y_{dq+}$ based off it,
+i.e. this time wee need to inlcude both `r` and `i` components in the perturbation channel `in` and the observed channel `out`.
+=#
+
+Gs_dqplus = map([:sg1_bus, :sg2_bus, :gfm_bus, :gfl_bus]) do COMP
+    vs = [VIndex(COMP, :busbar₊u_r), VIndex(COMP, :busbar₊u_i)]
+    cs = [VIndex(COMP, :busbar₊i_r), VIndex(COMP, :busbar₊i_i)]
+    G = NetworkDynamics.linearize_network(nw, s0; in=vs, out=cs).G
+    ## Complex vector transformation
+    T = [1.0 1.0im; 1.0 -1.0im]
+    Tinv = inv(T)
+    ## Return positive sequence admittance Y_dq+(s)
+    (s) -> (T * G(s) * Tinv)[1,1]
+end
+nothing #hide #md
+
+#=
+In the last line we only took the $Y_{dq+}$ from the resulting $2 \times 2$ matrix,
+since $Y_{dq+}(j\,\omega) = Y_{dq-}(-j\,\omega)$ and we can obtain both positive
+and negative sequence plots from the same matrix element.
+
+```@raw html #md
+<details class="admonition is-details"> #md
+<summary class="admonition-header">Bode plot code (positive and negative frequencies)</summary> #md
+<div class="admonition-body"> #md
+<div>
+```
+=#
+
+fig = with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
+    fig = Figure(; size=(900, 600))
+    Label(fig[0, 1:2], "Y_{dq+} Bode Plot", fontsize=16, halign=:center, tellwidth=false)
+
+    ## Create 2×2 grid: [magnitude_neg, magnitude_pos; phase_neg, phase_pos]
+    ax_mag_neg = Axis(fig[1, 1], xlabel="Frequency (Hz)", ylabel="Gain (dB)",
+                      xscale=log10, xreversed=true)
+    ax_mag_pos = Axis(fig[1, 2], xlabel="Frequency (Hz)",
+                      xscale=log10, yticklabelsvisible=false, yticksvisible=false)
+    ax_phase_neg = Axis(fig[2, 1], xlabel="Frequency (Hz)", ylabel="Phase (deg)",
+                        xscale=log10, xreversed=true)
+    ax_phase_pos = Axis(fig[2, 2], xlabel="Frequency (Hz)",
+                        xscale=log10, yticklabelsvisible=false, yticksvisible=false)
+
+    labels = ["Bus $i" for i in 1:length(Gs_dqplus)]
+    for (G, label) in zip(Gs_dqplus, labels)
+        fs_pos = 10 .^ (range(log10(1e-1), log10(1e4); length=500))
+        fs_neg = fs_pos
+        jωs_pos = 2π * fs_pos * im
+        jωs_neg = -2π * fs_neg * im
+
+        gains_pos = map(s -> 20 * log10(abs(G(s))), jωs_pos)
+        gains_neg = map(s -> 20 * log10(abs(G(s))), jωs_neg)
+        phases_pos = rad2deg.(unwrap_rad(map(s -> angle(G(s)), jωs_pos)))
+        phases_neg = rad2deg.(unwrap_rad(map(s -> angle(G(s)), jωs_neg)))
+
+        ## Plot negative frequencies (reversed x-axis)
+        lines!(ax_mag_neg, fs_neg, gains_neg; label, linewidth=2)
+        lines!(ax_phase_neg, fs_neg, phases_neg; label, linewidth=2)
+
+        ## Plot positive frequencies
+        lines!(ax_mag_pos, fs_pos, gains_pos; label, linewidth=2)
+        lines!(ax_phase_pos, fs_pos, phases_pos; label, linewidth=2)
+    end
+
+    axislegend(ax_mag_pos; position=:rb)
+    linkyaxes!(ax_mag_neg, ax_mag_pos)
+    linkyaxes!(ax_phase_neg, ax_phase_pos)
+    fig
+end
+nothing #hide #md
+#=
+```@raw html #md
+</div></details> #md
+``` #md
+=#
+fig #hide #md
+
+#=
+Once again we match the results obtained from SimplusGT for the same analysis.
+
+!!! details "SimplusGT Reference: Complex Vector Bode Plot"
+    ![image](../assets/SimplusGTPlots/Figure_201.png)
+=#
+
+#=
 ## Time-Domain Simulation
 
-Since we have the full nonlinear model at hand, lets also do a time domain simualtion.
+Since we have the full nonlinear model at hand, lets also do a time domain simulation.
 To perturb the system, we apply a three-phase short circuit at Bus 1 by reducing the shunt resistance to near zero for a short time.
 The faul starts a 0.1s and is cleared at 0.2s.
 =#
@@ -490,8 +661,14 @@ nothing # hide
 
 #=
 Lets compare the results against a similar EMT simulation done in the Simulink model generated by SimplusGT.
+
+```@raw html #md
+<details class="admonition is-details"> #md
+<summary class="admonition-header">Time domain plot code</summary> #md
+<div class="admonition-body"> #md
+``` #md
 =#
-with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
+fig = with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
     fig = Figure()
     ax = Axis(fig[1,1], title="Voltage Magnitude", limits=((0,0.5), (0.0, 1.2)))
     ts = refine_timeseries(sol.t)
@@ -507,6 +684,13 @@ with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
     axislegend(ax2; position=:rb)
     fig
 end
+nothing #hide #md
+#=
+```@raw html #md
+</div></details> #md
+``` #md
+=#
+fig #hide #md
 
 #=
 !!! details "SimplusGT Reference: Short Circuit Response"
@@ -519,50 +703,152 @@ end
 
 using FFTA
 using Statistics
-dt = 0.001
-# ts = 5:dt:30
-ts = 0.1:dt:30
-umag = sol(ts, idxs=VIndex(:bus3, :busbar₊u_mag)).u
+dt = 0.0001
+# ts = (0.1:dt:0.2)[2:end-1]
+# ts = 0.2:dt:30
+ts = 0.1:dt:0.2
+umags = [sol(ts, idxs=VIndex(Symbol(:bus, i), :busbar₊u_mag)).u for i in 1:4]
 
 #=
 ## Power Spectrum Analysis
 Compute the power spectrum of the voltage magnitude to identify dominant frequencies.
 =#
 fs = 1/dt            # sampling frequency [Hz]
-N = length(umag)
+N = length(ts)
 
 # Apply Hann window to reduce spectral leakage
 hann_window = 0.5 .- 0.5 .* cos.(2π .* (0:N-1) ./ (N-1))
-umag_windowed = (umag .- mean(umag)) .* hann_window
+umag_windowed = [(umag .- mean(umag)) .* hann_window for umag in umags]
+
+let
+    plot(umag_windowed[1])
+    plot!(umag_windowed[2])
+    plot!(umag_windowed[3])
+    plot!(umag_windowed[4])
+    current_figure()
+end
 
 # Compute FFT and power spectrum
-fft_result = fft(umag_windowed)
-power_fft = abs.(fft_result).^2 / N
+fft_results = fft.(umag_windowed)
+power_ffts = [abs.(fft_result).^2 / N for fft_result in fft_results]
 
 # Positive frequencies only
-power = power_fft[1:N÷2]
+powers = [power_fft[1:N÷2] for power_fft in power_ffts]
 freqs_hz = (0:N÷2-1) .* (fs/N)
 
 let
     fig = Figure(size=(600,500))
     ax1 = Axis(fig[1, 1], xlabel="Real Part [Hz]", ylabel="Imaginary Part [Hz]",
-               title="Pole Map with Power Spectrum Overlay", xscale=CairoMakie.Makie.pseudolog10)
-    xlims!(ax1, -10, 0.1); ylims!(ax1, -10, 10)
+               title="Pole Map with Power Spectrum Overlay")
+    ## ylims!(ax1, -freqs_hz[end], freqs_hz[end])
+    xlims!(ax1, -10, 0.1); ylims!(ax1, -60, 60)
     candidate = eigenvalues[end-2]
     scatter!(ax1, real(candidate), imag(candidate),color=:red, markersize=50, alpha=0.3)
-    lines!(ax1, -10*power, freqs_hz, label="Power Spectrum (scaled)", color=Cycled(2))
+    for power in powers
+        lines!(ax1, -20*power, freqs_hz, label="Power Spectrum (scaled)"#=, color=Cycled(2)=#)
+    end
     scatter!(ax1, real.(eigenvalues), imag.(eigenvalues), marker=:xcross, label="Eigenvalues")
     axislegend(ax1; position=:rb)
     fig
 end
 
-pfc = participation_factors(s0)
-pfc_sel = (; eigenvalues=pfc.eigenvalues[end-4:end], pfactors=pfc.pfactors[:, end-4:end], state_syms=pfc.state_syms)
-show_participation_factors(pfc_sel)
 
-# TODO:
-# parameter sensitivity
-# maybe focus on a mode in the inverters instead
-# check participation facors for mode
-# see which parameter influences the mode  (aroow plot?)
-# change parameter and rerun the simulation
+pfc = participation_factors(s0)
+# pfc_sel = (; eigenvalues=pfc.eigenvalues[end-4:end], pfactors=pfc.pfactors[:, end-4:end], state_syms=pfc.state_syms)
+show_participation_factors(pfc_sel)
+show_participation_factors(s0)
+eigenvalues
+
+#=
+## Parameter Sensitivity Analysis
+
+Having identified the modes of interest through participation factors, the natural
+next question is: **which parameters most influence a given mode?**
+
+The [`eigenvalue_sensitivity`](@extref NetworkDynamics.eigenvalue_sensitivity) function
+computes the sensitivity of a specific eigenvalue to every parameter in the system using
+the classical formula:
+
+```math
+\frac{\partial \lambda_i}{\partial p_k} = \mathbf{w}_i^\top \frac{\partial A_s}{\partial p_k} \mathbf{v}_i
+```
+
+where ``\mathbf{v}_i`` and ``\mathbf{w}_i`` are the right and left eigenvectors.
+The Jacobian derivative ``\partial A_s / \partial p_k`` is computed exactly via nested
+forward-mode automatic differentiation.
+
+The results are displayed as **scaled sensitivities** ``p_k \cdot \partial\lambda/\partial p_k``,
+which give the eigenvalue shift per 100% parameter change — making it easy to compare
+parameters of vastly different magnitudes.
+
+We can look at the participation factors table (the Mode column shows the index to use)
+and pick a mode to analyze. Let's take the lightly-damped inter-area oscillation at
+about 2.75 Hz. We find the mode index programmatically:
+=#
+eigenvalues = jacobian_eigenvals(nw, s0) ./ (2π)
+# mode_idx = argmin(abs.(eigenvalues ./ (2π) .- (-0.008 + 2.75im)))
+mode_idx = 33
+eigenvalues[33]
+
+sens = eigenvalue_sensitivity(nw, s0, mode_idx)
+show_eigenvalue_sensitivity(sens; threshold=0, sortby=:realmag)
+
+#=
+We can visualize the top sensitivities as a bar chart.
+The phase angle tells us *how* the eigenvalue moves: angles near ±90° shift
+the oscillation frequency, while angles near 0° or 180° affect the damping.
+=#
+let
+    sv = sens.scaled_sensitivities ./ (2π) # convert to Hz
+    mags = abs.(sv)
+    mags[isnan.(mags)] .= 0.0 # filter non-finite parameter sensitivities
+    top = sortperm(mags; rev=true)[1:15]
+
+    labels = [string(sens.param_syms[i]) for i in top]
+    fig = Figure(size=(700, 400))
+    ax = Axis(fig[1, 1],
+        xlabel="|p·∂λ/∂p| (Hz)", title="Top 15 Parameter Sensitivities for Mode $mode_idx",
+        yticks=(1:15, reverse(labels)))
+    barh!(ax, 1:15, reverse(mags[top]))
+    fig
+end
+
+#=
+run with tuned parameters
+=#
+
+s1 = copy(s0)
+s1[VIndex(:gfm_bus, :droop₊vsrc₊VC_KP)] *= 3.0
+s1[VIndex(:gfm_bus, :droop₊vsrc₊VC_KI)] *= 3.0
+
+prob2 = ODEProblem(nw, s1, (-20,30); add_comp_cb=VIndex(:bus1)=>short)
+sol2 = solve(prob2, Rodas5P())
+
+#=
+```@raw html #md
+<details class="admonition is-details"> #md
+<summary class="admonition-header">Time domain plot code (tuned parameters)</summary> #md
+<div class="admonition-body"> #md
+``` #md
+=#
+fig = with_theme(Theme(palette = (; color = Makie.wong_colors()[[1, 6, 2, 4]]))) do
+    fig = Figure()
+    ax = Axis(fig[1,1], title="Voltage Magnitude (tuned)", limits=((0,0.5), (0.0, 1.2)))
+    ts = filter(t -> t>0, refine_timeseries(sol.t))
+    for i in 1:4
+        lines!(ax, ts, sol2(ts, idxs=VIndex(Symbol(:bus, i), :busbar₊u_mag)).u; label="Bus $i", color=Cycled(i))
+    end
+    ax2 = Axis(fig[2,1], title="Voltage Magnitude (before)", limits=((0,0.5), (0.0, 1.2)))
+    for i in 1:4
+        lines!(ax2, ts, sol(ts, idxs=VIndex(Symbol(:bus, i), :busbar₊u_mag)).u; label="Bus $i", color=Cycled(i))
+    end
+    axislegend(ax2; position=:rb)
+    fig
+end
+nothing #hide #md
+#=
+```@raw html #md
+</div></details> #md
+``` #md
+=#
+fig #hide #md
