@@ -39,7 +39,7 @@ The installer will ask you some questions, you won't need to change any defaults
 ### Verify installation
 After the installation, run the `julia` command in your terminal. You should get an output like this:
 
-![image](../assets/juliasetup/julia-prompt.png)
+![image](assets/juliasetup/julia-prompt.png)
 
 !!! tip "Stick to Julia 1.11 for now"
     By default, juliaup will install the latest stable version of Julia. As of 10/2025, that is 1.12. However there are some minor problems in 1.12 which might make it less stable. For now, I'd advise you to stay at Julia 1.11. To do so, run
@@ -83,7 +83,7 @@ Often, different projects require different dependencies and different versions.
 To create your first environment, create a new folder somewhere (for example `/home/Documents/powerdynamics_playground`).
 You can open this (empty) folder in VSCode and create a new file for your first script:
 
-![image](../assets/juliasetup/vscode-script.png)
+![image](assets/juliasetup/vscode-script.png)
 
 Open the newly created file, hit `CTRL + SHIFT + P` to bring up the VSCode "command palette", search for "Start REPL"
 and launch your Julia REPL.
@@ -105,7 +105,7 @@ After activation, we can add `PowerDynamics` to our newly created environment us
 ```
 This will install PowerDynamics and all its dependencies. It will also precompile all of that. This may take a while...
 
-![image](../assets/juliasetup/vscode-add-pd.png)
+![image](assets/juliasetup/vscode-add-pd.png)
 
 Once you've added a package, you'll see that two new files appeared: `Project.toml` and `Manifest.toml`.
 The `Project.toml` lists all of your dependencies. This is the file you change when *adding* new packages.
@@ -153,7 +153,7 @@ Besides executing an entire script (play button up top), you can execute **singl
     ```
     Execute it line by line using `SHIFT + RETURN` and enjoy your first bus model!
 
-    ![image](../assets/juliasetup/vscode-firstmodel.png)
+    ![image](assets/juliasetup/vscode-firstmodel.png)
     
 ## Running PowerDynamics Examples
 Now you know everything you need to know to run our examples locally.

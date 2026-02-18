@@ -111,7 +111,7 @@ enforce `u_dst = u_src` with the current as an implicit output. When open, the e
 enforce `i = 0`.
 
 !!! note "Usage of `implicit_output`"
-    [`implicit_output`](@ref NetworkDynamics.implicit_output) evaluates to zero.
+    [`implicit_output`](@extref NetworkDynamics.implicit_output) evaluates to zero.
     Including it is just a trick to convince MTK that the current variables `i_r` and `i_i`
     are in some sense part of this constraint, because by changing the current the solver
     can satisfy the voltage equality.
