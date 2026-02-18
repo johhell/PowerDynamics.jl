@@ -37,7 +37,7 @@ for dir in (example_dir, tutorial_dir)
 end
 
 kwargs = (;
-    modules=[PowerDynamics, PowerDynamics.Library],
+    modules=[PowerDynamics, PowerDynamics.Library, PowerDynamics.Library.ComposableInverter],
     authors="Hans Würfel, Tim Kittel, Jan Liße, Sabine Auer, Anton Plietzsch and contributors",
     sitename="PowerDynamics.jl",
     build=haskey(ENV, "DOCUMENTER_DRAFT") ? "build_draft" : "build",
