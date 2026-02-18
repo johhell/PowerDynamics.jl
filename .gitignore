@@ -2,6 +2,7 @@
 *Manifest.toml
 *Manifest-v1.11.toml
 /docs/build/
+/docs/build_draft/
 /docs/src/generated/
 .vscode
 devenv

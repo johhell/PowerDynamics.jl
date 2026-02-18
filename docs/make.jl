@@ -37,6 +37,9 @@ for dir in (example_dir, tutorial_dir)
 end
 
 kwargs = (;
+    # linear_analysis must run before ieee39_part4, because loading SciMLSensitivity
+    # (used in part4) before linear_analysis breaks the linear analysis examples.
+    expandfirst = ["generated/linear_analysis.md"],
     modules=[PowerDynamics, PowerDynamics.Library, PowerDynamics.Library.ComposableInverter],
     authors="Hans Würfel, Tim Kittel, Jan Liße, Sabine Auer, Anton Plietzsch and contributors",
     sitename="PowerDynamics.jl",
