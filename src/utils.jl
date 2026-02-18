@@ -137,9 +137,9 @@ const GITHUB_REPO = "JuliaEnergy/PowerDynamics.jl"
 const GITHUB_REF = let
     if haskey(ENV, "GITHUB_REF_NAME")
         ref_name = ENV["GITHUB_REF_NAME"]
-        # PR refs look like "253/merge" — not valid for blob links; use base branch instead
+        # PR refs look like "253/merge" — not valid for blob links; use commit SHA instead
         if occursin(r"^\d+/merge$", ref_name)
-            get(ENV, "GITHUB_BASE_REF", "main")
+            get(ENV, "GITHUB_SHA", "main")
         else
             ref_name
         end

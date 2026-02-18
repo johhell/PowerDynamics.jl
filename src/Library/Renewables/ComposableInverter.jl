@@ -285,7 +285,7 @@ to inner current controller (CC1). Operates in a fixed dq-frame (no PLL). Suitab
 - `filter_type`: `:LC` for LC filter or `:LCL` for LCL filter.
 - `Lf`: Inverter-side filter reactance [pu]. Related to physical inductance by Lf = ω0 * Lf_actual.
 - `C`: Filter susceptance [pu]. Related to physical capacitance by C = ω0 * C_actual.
-- `Lg`: Grid-side filter reactance [pu] (LCL only). Related to physical inductance by Lg = ω0 * Lg_actual.
+- `Lg`: Grid-side filter reactance [pu]. Related to physical inductance by Lg = ω0 * Lg_actual (LCL only).
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
 - Various PI controller gains (CC1_KP, CC1_KI, VC_KP, VC_KI)
 - `defaults...`: Additional parameter/variable defaults (e.g., `Lf=0.01, CC1_KP=0.1`)
@@ -797,7 +797,7 @@ The DC voltage controller generates active current reference (q-axis). Suitable 
 - `C_dc`: DC-link capacitance [pu]
 - `V_dc`: DC voltage reference [pu]
 - `kp_v_dc`, `ki_v_dc`: DC voltage PI controller gains
-- `P_dc`: External DC power draw [pu] (solved at initialization)
+- `P_dc`: External DC power draw [pu]
 - PLL and CC1 controller gains
 - `defaults...`: Additional parameter/variable defaults (e.g., `Lf=0.03, V_dc=2.0`)
 
