@@ -32,11 +32,13 @@ as those explain lots of the underlying functionality and concepts
 ### Reference & Concepts
 
 - **[Modeling Concepts](@ref)** - Learn the fundamental concepts behind PowerDynamics modeling
+- **[On Voltage and Current Sources](@ref vc-and-cs)** - Understand how voltage source and current source models interact with the network
 - **[Component Library](@ref)** - Explore the available power system component models
 - **[Powergrid Initialization](@ref)** - Understand how to properly initialize power system simulations
 - **[API Reference](@ref API)** - Complete function and type documentation
 
 ### Tutorials
+- **[Julia Setup for New Users](@ref julia-setup)** - Set up your Julia development environment for working with PowerDynamics.jl
 - **[Getting Started](@ref getting-started)** - Introduction to the core philosophy behind PowerDynamics.jl and its integration with the SciML ecosystem
 - **[Typical Simulation Workflow](@ref typical-simulation-workflow)** - Hands-on walkthrough of a small 3-bus example system, covering all stages from modeling to simulation
 - **[Custom Components](@ref custom-bus)** - Shows how to implement Milano's classical synchronous machine model with a power system stabilizer (PSS)
@@ -48,6 +50,7 @@ as those explain lots of the underlying functionality and concepts
 - **[IEEE 39-Bus System Part 2](@ref ieee39-part2)** - Demonstrates the detailed initialization process for the 39-bus system including power flow and initialization of dynamic models
 - **[IEEE 39-Bus System Part 3](@ref ieee39-part3)** - Runs dynamic simulation of the 39-bus system with a short circuit disturbance and fault clearing
 - **[IEEE 39-Bus System Part 4](@ref ieee39-part4)** - Implements a custom droop-controlled inverter model and performs parameter optimization using sensitivity analysis
+- **[Linear Analysis of a 4-Bus System](@ref linear-analysis)** - Performs linearization and eigenvalue analysis of a mixed SG/GFM/GFL EMT system and validates against reference results
 - **[EMT Toy Model Example](@ref emt-toymodel)** - Demonstrates very basic EMT modeling using dynamic shunt capacitor and RL transmission line components in rotating dq coordinates
 - **[Zero-Impedance Circuit Breaker](@ref zero_imp_breaker)** - Pedagogical example showing how to model switching components with zero-impedance connections.
 
