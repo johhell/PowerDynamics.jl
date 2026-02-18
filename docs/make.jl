@@ -39,7 +39,9 @@ end
 kwargs = (;
     # linear_analysis must run before ieee39_part4, because loading SciMLSensitivity
     # (used in part4) before linear_analysis breaks the linear analysis examples.
-    expandfirst = ["generated/linear_analysis.md"],
+    # vs_and_cs_models.md also uses initialize_from_pf, so it needs to run before
+    # ieee39_part4 too.
+    expandfirst = ["generated/linear_analysis.md", "vs_and_cs_models.md"],
     modules=[PowerDynamics, PowerDynamics.Library, PowerDynamics.Library.ComposableInverter],
     authors="Hans Würfel, Tim Kittel, Jan Liße, Sabine Auer, Anton Plietzsch and contributors",
     sitename="PowerDynamics.jl",
@@ -83,7 +85,7 @@ kwargs = (;
         r"^\.\./assets/OpenIPSL_valid/.*\.png$",  # Match ../assets/OpenIPSL_valid/*.png
         "https://marketplace.visualstudio.com/items?itemName=julialang.language-julia", # curl blocked?
         ],
-    warnonly=[],
+    warnonly=Symbol[],
 )
 kwargs_warnonly = (; kwargs..., warnonly=true)
 

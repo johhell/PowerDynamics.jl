@@ -85,8 +85,11 @@ using Main.PowerDynamicsTesting
 
     @testset "Test Doc Examples" begin
         examples = joinpath(pkgdir(PowerDynamics), "docs", "examples")
-        for file in readdir(examples; join=true)
-            endswith(file, ".jl") || continue
+        # ieee39_part4 loads SciMLSensitivity which breaks other examples via Enzyme;
+        # run all non-ieee39 examples first, then ieee39 examples at the end.
+        files = filter(f -> endswith(f, ".jl"), readdir(examples; join=true))
+        for file in Iterators.flatten([filter(f -> !contains(basename(f), "ieee39"), files),
+                                       filter(f ->  contains(basename(f), "ieee39"), files)])
             name = basename(file)
             @info "Test Example $name"
             eval(:(@safetestset $name begin include($file) end))
