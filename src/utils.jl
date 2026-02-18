@@ -144,7 +144,7 @@ const GITHUB_REF = let
     end
 end
 function ref_source_file(f, line)
-    subf = match(r"PowerDynamics/(.*)", f)[1]
+    subf = match(r"PowerDynamics.*/(src/.*)", f)[1]
 
     link = "https://github.com/$GITHUB_REPO/blob/$GITHUB_REF/$subf#L$(line+2)"
     doctext = "For a concrete list of variables and parameters please check the model source"
