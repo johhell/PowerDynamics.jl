@@ -1,3 +1,10 @@
+"""
+    Swing
+
+Simplified swing-equation generator with constant voltage magnitude and active power balance.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel Swing begin
     @structural_parameters begin
         ω_ref_input=false;

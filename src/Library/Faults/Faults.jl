@@ -1,3 +1,10 @@
+"""
+    RXGroundFault
+
+Shunt RX impedance to ground representing a fault, switchable via the `enable` parameter.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel RXGroundFault begin
     @parameters begin
         R, [description="Resistance to ground during fault [pu]"]

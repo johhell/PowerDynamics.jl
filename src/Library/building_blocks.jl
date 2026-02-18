@@ -59,6 +59,8 @@ SimpleLag block
 Additional structural parameters:
 - `guess=0`/`default`: initial guess/default for the internal state (equals output in steady state)
 - `allowzeroT`: if true, the lag is bypassed when T=0 (this does not reduce the model order)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel SimpleLag begin
     @structural_parameters begin
@@ -97,6 +99,8 @@ SimpleLead block
 
 This block directly uses `Dt(in)`, therefore it does not add additional states
 but may not be used in all scenarios!
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel SimpleLead begin
     @structural_parameters begin
@@ -416,6 +420,8 @@ outMin __/
 
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals output in steady state)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 SimpleLagLim(; kwargs...) = LimitedIntegratorBase(; type=:lag, kwargs...)
 
@@ -435,6 +441,8 @@ outMin __/
 
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals output in steady state)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 LimIntegrator(; kwargs...) = LimitedIntegratorBase(; type=:int, T=1, kwargs...)
 
@@ -613,6 +621,8 @@ Simple gain block
 ╶───┤ K ├────╴
     ╰───╯
 ```
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel SimpleGain begin
     @structural_parameters begin
@@ -640,6 +650,8 @@ Derivative approximation block. Modeled after Modelica.Blocks.Continuous.Derivat
 
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals input in steady state)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel Derivative begin
     @structural_parameters begin
@@ -672,6 +684,8 @@ LeadLag block
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals input in steady state)
 - `allowzeroT`: if true, the lead-lag is bypassed when T1=0 and T2=0 (this does not reduce the model order)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel LeadLag begin
     @structural_parameters begin
@@ -718,6 +732,8 @@ A dead zone nonlinearity that outputs zero when the input is within the specifie
 Structural parameters:
 - `uMax`: Upper dead zone limit
 - `uMin=-uMax`: Lower dead zone limit (defaults to -uMax for symmetric dead zone)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel DeadZone begin
     @structural_parameters begin

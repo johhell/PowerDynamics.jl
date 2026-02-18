@@ -1,3 +1,10 @@
+"""
+    AVRFixed
+
+Trivial AVR that holds the field voltage at a fixed parameter value.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel AVRFixed begin
     @components begin
         vf = RealOutput()
@@ -10,6 +17,13 @@
     end
 end
 
+"""
+    AVRTypeI
+
+IEEE Type I excitation system with amplifier, stabilizer feedback, field circuit, and ceiling function.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel AVRTypeI begin
     @structural_parameters begin
        vref_input=false

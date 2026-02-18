@@ -1,3 +1,10 @@
+"""
+    IdealDroopInverter
+
+Simplified droop-controlled inverter with first-order power filtering and ideal voltage source output.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel IdealDroopInverter begin
     @components begin
         terminal = Terminal()

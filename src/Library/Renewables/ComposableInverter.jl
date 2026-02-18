@@ -7,11 +7,18 @@ using ModelingToolkit: @mtkmodel, @variables, @parameters, @unpack, Num, System,
 using ModelingToolkitStandardLibrary.Blocks: RealInput, RealOutput
 using NetworkDynamics: set_mtk_defaults!
 
-using ..PowerDynamics: Terminal
+using ..PowerDynamics: PowerDynamics, Terminal
 
 export LCFilter, LCLFilter, LFilter, VC, CC1, CC2, SimplePLL, PLL_LPF, VoltageSource, CurrentSource, SimpleGFL, SimpleGFLDC
 export DroopOuter, DroopInverter
 
+"""
+    LFilter
+
+Single-inductor (L) output filter for inverters, modeled in the global dq-frame.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel LFilter begin
     @components begin
         terminal = Terminal()
@@ -37,6 +44,13 @@ export DroopOuter, DroopInverter
     end
 end
 
+"""
+    LCFilter
+
+Inductor-capacitor (LC) output filter for inverters, modeled in the global dq-frame.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel LCFilter begin
     @components begin
         terminal = Terminal()
@@ -80,6 +94,13 @@ end
     end
 end
 
+"""
+    LCLFilter
+
+LCL output filter (inverter-side inductor, capacitor, grid-side inductor) for inverters, modeled in the global dq-frame.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel LCLFilter begin
     @components begin
         terminal = Terminal()
@@ -133,6 +154,13 @@ end
     end
 end
 
+"""
+    CC1
+
+Inner current controller for the inverter-side inductor current, implementing PI control with optional decoupling feedforward.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @component function CC1(; name, Lf, F, Fcoupl=1, KP, KI, defaults...)
     vars = @variables begin
         γ_d(t), [guess=0]
@@ -164,6 +192,13 @@ end
     return sys
 end
 
+"""
+    VC
+
+Voltage controller for the filter capacitor voltage, implementing PI control with optional current feedforward decoupling.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @component function VC(; name, C, F, Fcoupl=1, KP, KI, defaults...)
     vars = @variables begin
         γ_d(t), [guess=0]
@@ -195,6 +230,13 @@ end
     return sys
 end
 
+"""
+    CC2
+
+Outer current controller for the grid-side inductor current, implementing PI control with optional voltage feedforward decoupling.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @component function CC2(; name, Lg, F, Fcoupl=1, KP, KI, defaults...)
     vars = @variables begin
         γ_d(t), [guess=0]
@@ -247,6 +289,8 @@ to inner current controller (CC1). Operates in a fixed dq-frame (no PLL). Suitab
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
 - Various PI controller gains (CC1_KP, CC1_KI, VC_KP, VC_KI)
 - `defaults...`: Additional parameter/variable defaults (e.g., `Lf=0.01, CC1_KP=0.1`)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @component function VoltageSource(; name, Vset_input=false, filter_type=:LC, defaults...)
     @parameters begin
@@ -347,6 +391,8 @@ Implements three-loop control: outer current controller (CC2) → voltage contro
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
 - PLL and controller gains (PLL_Kp, PLL_Ki, CC1_*, VC_*, CC2_*)
 - `defaults...`: Additional parameter/variable defaults (e.g., `Lf=0.01, PLL_Kp=100`)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @component function CurrentSource(; name, iset_input=false, defaults...)
     @parameters begin
@@ -470,6 +516,13 @@ function _dq_to_ri(_d, _q, δ)
 end
 
 
+"""
+    DroopOuter
+
+Power droop outer control loop implementing P-f and Q-V droop for grid-forming inverters.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @component function DroopOuter(; name, pq_input=false, Pset=nothing, Qset=nothing, defaults...)
     @parameters begin
         Vset, [description = "Voltage magnitude setpoint [pu]", guess=1]
@@ -550,6 +603,8 @@ Suitable for:
 - Droop controller parameters: `Kp` (P-f droop), `Kq` (Q-V droop), `τ_p`, `τ_q` (power filter time constants)
 - Filter parameters inherited from VoltageSource: `Lf`, `C`, `Lg`, `ω0`
 - `defaults...`: Additional parameter/variable defaults (e.g., `Kp=0.5, τ_p=0.2`)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @component function DroopInverter(; name=:droop_inv, filter_type, defaults...)
     @named droop = DroopOuter(; pq_input=false)
@@ -579,6 +634,8 @@ Uses a PI controller on the angle error signal `u_q`.
 - `Kp`: Proportional gain
 - `Ki`: Integral gain
 - `defaults...`: Additional parameter/variable defaults
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @component function SimplePLL(; name, Kp, Ki, defaults...)
     vars = @variables begin
@@ -615,6 +672,8 @@ estimated frequency `ω`.
 - `Ki`: Integral gain
 - `τ_lpf`: Low-pass filter time constant [s]
 - `defaults...`: Additional parameter/variable defaults
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @component function PLL_LPF(; name, Kp, Ki, τ_lpf, defaults...)
     vars = @variables begin
@@ -655,6 +714,8 @@ Suitable for:
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
 - PLL and CC1 controller gains
 - `defaults...`: Additional parameter/variable defaults (e.g., `Lf=0.05, PLL_Kp=50`)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @component function SimpleGFL(; name, iset_input=false, defaults...)
     @parameters begin
@@ -739,6 +800,8 @@ The DC voltage controller generates active current reference (q-axis). Suitable 
 - `P_dc`: External DC power draw [pu] (solved at initialization)
 - PLL and CC1 controller gains
 - `defaults...`: Additional parameter/variable defaults (e.g., `Lf=0.03, V_dc=2.0`)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @component function SimpleGFLDC(; name, defaults...)
     @parameters begin

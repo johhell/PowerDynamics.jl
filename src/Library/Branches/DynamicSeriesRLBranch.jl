@@ -15,6 +15,8 @@ The line current is a differential state, suitable for:
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
 - `r_src`: Transformer voltage ratio at source. Default: 1.
 - `r_dst`: Transformer voltage ratio at destination. Default: 1.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel DynamicSeriesRLBranch begin
     @parameters begin

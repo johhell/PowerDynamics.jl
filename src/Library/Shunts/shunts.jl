@@ -10,6 +10,8 @@ to the bus voltage: I = Y * V. It has no dynamic states and is evaluated algebra
 - `G`: Shunt conductance [pu]. Positive values represent resistive losses (real power consumption).
 - `B`: Shunt susceptance [pu]. Positive values represent capacitive behavior (leading current),
        negative values represent inductive behavior (lagging current).
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel StaticShunt begin
     @parameters begin
@@ -40,6 +42,8 @@ current-source buses and modelling shunt capacitor banks without resistive losse
 # Parameters
 - `C`: Shunt susceptance [pu] at frequency ω0. Related to physical capacitance by C = ω0 * C_actual.
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel DynamicCShunt begin
     @components begin
@@ -83,6 +87,8 @@ The capacitor voltage is a differential state, suitable for:
 - `R`: Shunt resistance [pu]
 - `C`: Shunt susceptance [pu] at frequency ω0. Related to physical capacitance by C = ω0 * C_actual.
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel DynamicParallelRCShunt begin
     @components begin

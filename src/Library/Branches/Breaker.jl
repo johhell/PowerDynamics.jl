@@ -1,3 +1,10 @@
+"""
+    Breaker
+
+Ideal circuit breaker: enforces equal terminal voltages when closed, zero current when open.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel Breaker begin
     @parameters begin
         closed=1, [description="Breaker closed (1) or open (0)"]

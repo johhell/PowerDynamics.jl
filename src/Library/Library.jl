@@ -114,6 +114,13 @@ end
 ####
 export SlackAlgebraic, SlackDifferential, VariableFrequencySlack
 
+"""
+    SlackAlgebraic
+
+Algebraic slack bus that enforces constant real and imaginary voltage components.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel SlackAlgebraic begin
     @components begin
         busbar = BusBase()
@@ -128,6 +135,13 @@ export SlackAlgebraic, SlackDifferential, VariableFrequencySlack
     end
 end
 
+"""
+    SlackDifferential
+
+Slack bus with differential voltage states, holding voltage constant via zero derivatives.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel SlackDifferential begin
     @parameters begin
         u_init_r=1, [description="bus d-voltage initial value"]
@@ -142,6 +156,13 @@ end
     end
 end
 
+"""
+    VariableFrequencySlack
+
+Slack bus with a dynamic voltage angle driven by a configurable (possibly time-varying) frequency.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel VariableFrequencySlack begin
     @components begin
         busbar = BusBase()

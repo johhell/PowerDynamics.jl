@@ -1,3 +1,10 @@
+"""
+    PiLine
+
+Pi-section transmission branch with series impedance, shunt admittances, and optional transformer ratios.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel PiLine begin
     @parameters begin
         R=0, [description="Resistance of branch in pu"]

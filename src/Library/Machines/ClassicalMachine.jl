@@ -1,3 +1,10 @@
+"""
+    ClassicalMachine
+
+Classical synchronous machine model with transient reactance and swing dynamics.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel ClassicalMachine begin
     @structural_parameters begin
         τ_m_input = true

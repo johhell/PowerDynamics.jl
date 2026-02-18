@@ -132,3 +132,28 @@ function _unwrap(angles, range)
 
     unwrapped
 end
+
+const GITHUB_REPO = "JuliaEnergy/PowerDynamics.jl"
+const GITHUB_REF = let
+    if haskey(ENV, "GITHUB_REF_NAME")
+        ENV["GITHUB_REF_NAME"]
+    else
+        projecttoml = read(joinpath(pkgdir(PowerDynamics), "Project.toml"), String)
+        versionstring = match(r"version\s?=\s?\"(.*)\"", projecttoml)[1]
+        "v"*versionstring
+    end
+end
+function ref_source_file(f, line)
+    subf = match(r"PowerDynamics/(.*)", f)[1]
+
+    link = "https://github.com/$GITHUB_REPO/blob/$GITHUB_REF/$subf#L$(line+2)"
+    doctext = "For a concrete list of variables and parameters please check the model source"
+    if haskey(ENV, "GITHUB_ACTIONS")
+        # for online docs
+        doctext *= " on [GitHub]($link)."
+    else
+        doctext *= "\n - online [$link]($link)"
+        doctext *= "\n - local @ $f:$line"
+    end
+    doctext
+end

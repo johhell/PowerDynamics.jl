@@ -10,6 +10,13 @@
 # Description: PSSE Load model with ZIP characteristics, voltage dependency, and load variation capability
 # Reference: PSS/E Manual
 
+"""
+    PSSE_Load
+
+PSS/E load model combining ZIP (constant-impedance/current/power) characteristics with voltage-dependent scaling.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel PSSE_Load begin
     @components begin
         terminal = Terminal()
