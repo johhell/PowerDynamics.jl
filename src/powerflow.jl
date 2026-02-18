@@ -260,7 +260,7 @@ function solve_powerflow(
     alg = nothing,
     kwargs...
 )
-    # don't enforce this, check happes in `powerflow_model`
+    # don't enforce this, check happens in `powerflow_model`
     # pfnw.mass_matrix == LinearAlgebra.UniformScaling(0) || error("Powerflow model must have a mass matrix of 0!")
 
     if isnothing(alg)

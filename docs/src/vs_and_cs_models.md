@@ -4,7 +4,7 @@ This document covers important concepts relating to the interplay between Modeli
 Make sure to read the PowerDynamics docs on [Modeling Concepts](@ref) first.
 Also check out the NetworkDynamics.jl docs on the [Mathematical Model](@extref), which covers in detail what is only recapped briefly here.
 
-Since handling large symbolic models can be computationally intensive, the core idea of this library is to maintain a clear separation between acausal symbolic models for individual components (generators, loads, RES, ...) and the interconnection of said compoinents for network simulation. The symbolic models are simplified and compiled into [`VertexModel`](@extref NetworkDynamics.VertexModel-Tuple{}) and [`EdgeModel`](@extref NetworkDynamics.EdgeModel-Tuple{}) objects.
+Since handling large symbolic models can be computationally intensive, the core idea of this library is to maintain a clear separation between acausal symbolic models for individual components (generators, loads, RES, ...) and the interconnection of said components for network simulation. The symbolic models are simplified and compiled into [`VertexModel`](@extref NetworkDynamics.VertexModel-Tuple{}) and [`EdgeModel`](@extref NetworkDynamics.EdgeModel-Tuple{}) objects.
 These models have a clear input-output structure related to the interconnection of potentials and flows on the network.
 Namely:
 - `VertexModels` sit at the buses. As input, they see the summed current from all connected lines. Their job is to establish a voltage at that point.

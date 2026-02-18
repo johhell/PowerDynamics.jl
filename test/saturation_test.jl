@@ -284,7 +284,7 @@ end
     =#
 end
 
-@testset "initialiation" begin
+@testset "initialization" begin
     configs = Dict(
         :callback => SaturationConfig(:callback),
         :complementary => SaturationConfig(:complementary; regularization=1e-8),

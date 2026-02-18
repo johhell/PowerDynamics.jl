@@ -110,10 +110,10 @@ We use `ifelse` to switch between these two operating modes. When closed, the eq
 enforce `u_dst = u_src` with the current as an implicit output. When open, the equations
 enforce `i = 0`.
 
-!!! note "Usage of `implicit_output`""
+!!! note "Usage of `implicit_output`"
     [`implicit_output`](@ref NetworkDynamics.implicit_output) evaluates to zero.
-    Including it is just a trick to convice MTK that the current variables `i_r` and `i_i`
-    are in some sense part of this constraint, because by chaging the current the solver
+    Including it is just a trick to convince MTK that the current variables `i_r` and `i_i`
+    are in some sense part of this constraint, because by changing the current the solver
     can satisfy the voltage equality.
     This is necessary, because MTK does not know about the explicit feedback loop `u_src = f(i_src)`.
 =#
@@ -175,11 +175,11 @@ We define two callbacks to control the breaker:
 
 The `toggle_breaker` affect function switches the breaker state by flipping the `closed` parameter.
 
-Once the breaker is opend, we expect power imbalances and thus frequency
+Once the breaker is opened, we expect power imbalances and thus frequency
 deviations in both subsystem 1 and subsystem 2.
-At some point, the voltage angles on both sides will align agin, triggering the reclosing
+At some point, the voltage angles on both sides will align again, triggering the reclosing
 callback. This is obviously not a realistic breaker control strategy, but it serves to
-demostrate both opening and closing of the breaker in a single simulation.
+demonstrate both opening and closing of the breaker in a single simulation.
 =#
 
 toggle_breaker = ComponentAffect([],[:breaker₊closed]) do u, p, ctx
@@ -210,7 +210,7 @@ nothing #hide #md
 
 #=
 !!! note "Angle Wrapping"
-    Be carfull: due to the wrapping behavior of `atan`, the angle difference can jump.
+    Be careful: due to the wrapping behavior of `atan`, the angle difference can jump.
     Therefore, this simple closing conditions won't work in many scenarios. Implementing a
     robust synchronization detection algorithm is beyond the scope of this tutorial.
 

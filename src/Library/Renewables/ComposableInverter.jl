@@ -511,7 +511,7 @@ end
 
     eqs = [
         # Power measurement from terminal quantities
-        # Pmeas need to be calculated extenrally and connected as input!
+        # Pmeas need to be calculated externally and connected as input!
         Pmeas ~ P_meas_in.u
         Qmeas ~ Q_meas_in.u
 

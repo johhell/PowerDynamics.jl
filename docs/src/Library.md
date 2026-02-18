@@ -117,6 +117,37 @@ DynamicCShunt
 DynamicParallelRCShunt
 ```
 
+## Renewable Energy Models
+
+### Inverter Models
+```@docs
+IdealDroopInverter
+```
+
+### Composable Inverter Modeling
+The `ComposableInverter` module within library provides common inverter models using cascaded controls over L, LC or LCL filters in a "component based" way.
+
+#### Toplevel Models
+```@docs
+ComposableInverter.DroopInverter
+ComposableInverter.SimpleGFL
+ComposableInverter.SimpleGFLDC
+```
+#### Building Blocks
+```@docs
+ComposableInverter.VoltageSource
+ComposableInverter.DroopOuter
+ComposableInverter.CurrentSource
+ComposableInverter.SimplePLL
+ComposableInverter.PLL_LPF
+ComposableInverter.VC
+ComposableInverter.CC1
+ComposableInverter.CC2
+ComposableInverter.LCLFilter
+ComposableInverter.LCFilter
+ComposableInverter.LFilter
+```
+
 ## Fault Models
 
 ### Ground Fault Models

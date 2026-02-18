@@ -50,6 +50,7 @@ islinemodel
 pfSlack
 pfPV
 pfPQ
+pfShunt
 ```
 
 ### Power Flow Solution Functions
