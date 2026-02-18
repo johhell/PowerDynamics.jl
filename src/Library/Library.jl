@@ -258,13 +258,13 @@ include("Branches/PiLine_fault.jl")
 export Breaker
 include("Branches/Breaker.jl")
 
-export DynamicRLBranch
-include("Branches/DynamicRLBranch.jl")
+export DynamicSeriesRLBranch
+include("Branches/DynamicSeriesRLBranch.jl")
 
 ####
 #### Shunt Models
 ####
-export StaticShunt, DynamicRCShunt
+export StaticShunt, DynamicCShunt, DynamicParallelRCShunt
 include("Shunts/shunts.jl")
 
 ####

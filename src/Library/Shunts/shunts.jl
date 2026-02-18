@@ -30,9 +30,48 @@ to the bus voltage: I = Y * V. It has no dynamic states and is evaluated algebra
 end
 
 """
-    DynamicRCShunt(; R, C, ω0=2π*50)
+    DynamicCShunt(; C, ω0=2π*50)
 
-Dynamic shunt element modeled as a parallel R || C circuit.
+Dynamic shunt element modeled as a pure capacitor.
+
+The capacitor voltage is a differential state, suitable for DAE index reduction at
+current-source buses and modelling shunt capacitor banks without resistive losses.
+
+# Parameters
+- `C`: Shunt susceptance [pu] at frequency ω0. Related to physical capacitance by C = ω0 * C_actual.
+- `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
+"""
+@mtkmodel DynamicCShunt begin
+    @components begin
+        terminal = Terminal()
+    end
+    @parameters begin
+        ω0=2π*50, [description="Frame angular frequency [rad/s]"]
+        C, [description="Shunt susceptance [pu] (frequency-normalized capacitance)"]
+    end
+    @variables begin
+        V_C_r(t), [guess=1, description="Capacitor voltage real part (dq frame) [pu]"]
+        V_C_i(t), [guess=0, description="Capacitor voltage imaginary part (dq frame) [pu]"]
+        i_C_r(t), [guess=0, description="Capacitor current real part (dq frame) [pu]"]
+        i_C_i(t), [guess=0, description="Capacitor current imaginary part (dq frame) [pu]"]
+    end
+    @equations begin
+        # Capacitor dynamics in rotating dq frame (C is susceptance)
+        C/ω0 * Dt(V_C_r) ~ -i_C_r + C*V_C_i
+        C/ω0 * Dt(V_C_i) ~ -i_C_i - C*V_C_r
+        # Terminal voltage = capacitor voltage
+        terminal.u_r ~ V_C_r
+        terminal.u_i ~ V_C_i
+        # Grid current: capacitor only
+        terminal.i_r ~ i_C_r
+        terminal.i_i ~ i_C_i
+    end
+end
+
+"""
+    DynamicParallelRCShunt(; R, C, ω0=2π*50)
+
+Dynamic shunt element modeled as a parallel R ∥ C circuit.
 
 This model represents a parallel combination of resistance and capacitance connected to a bus.
 The capacitor voltage is a differential state, suitable for:
@@ -45,7 +84,7 @@ The capacitor voltage is a differential state, suitable for:
 - `C`: Shunt susceptance [pu] at frequency ω0. Related to physical capacitance by C = ω0 * C_actual.
 - `ω0`: Frame angular frequency [rad/s]. Default: 2π*50 rad/s.
 """
-@mtkmodel DynamicRCShunt begin
+@mtkmodel DynamicParallelRCShunt begin
     @components begin
         terminal = Terminal()
     end

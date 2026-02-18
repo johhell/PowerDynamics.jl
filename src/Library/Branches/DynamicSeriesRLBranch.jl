@@ -1,5 +1,5 @@
 """
-    DynamicRLBranch(; R, L, ω0, r_src=1, r_dst=1)
+    DynamicSeriesRLBranch(; R, L, ω0, r_src=1, r_dst=1)
 
 Dynamic transmission line modeled as a series R-L circuit with optional transformer ratios.
 
@@ -16,7 +16,7 @@ The line current is a differential state, suitable for:
 - `r_src`: Transformer voltage ratio at source. Default: 1.
 - `r_dst`: Transformer voltage ratio at destination. Default: 1.
 """
-@mtkmodel DynamicRLBranch begin
+@mtkmodel DynamicSeriesRLBranch begin
     @parameters begin
         R, [description="Line resistance [pu]"]
         L, [description="Line reactance [pu] (frequency-normalized inductance)"]

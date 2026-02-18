@@ -306,6 +306,7 @@ end
 initialize_from_pf_docstring = raw"""
     initialize_from_pf[!](
         nw::Network;
+        default_overrides=nothing,
         verbose = true,
         subverbose = false,
         pfnw = powerflow_model(nw),
@@ -338,6 +339,7 @@ state again, as it is stored in the metadata.
 
 ## Parameters
 - `nw`: The dynamic network model to initialize
+- `default_overrides`: Is added *in addition* to the interface values extracted from the power flow solution. This allows you to change parameters for example.
 - `verbose`: Whether to print information about the power flow solution (default: true)
 - `subverbose`: Whether to print detailed information during component initialization (default: false). Can be Vector [VIndex(1), EIndex(3), ...] for selective output
 - `pfnw`: Power flow network model (default: created from `nw` using `powerflow_model`)

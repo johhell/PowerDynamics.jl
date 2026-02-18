@@ -66,11 +66,11 @@ for idx = 1:length(activeBuses)
     end
 end
 
-% Create figure with two subplots (stacked vertically)
-fig_trajectory = figure('Name', 'Voltage_Trajectory', 'Position', [100, 100, 800, 800]);
+% Create figure with three subplots (stacked vertically)
+fig_trajectory = figure('Name', 'Voltage_Trajectory', 'Position', [100, 100, 600, 700]);
 
-% Subplot 1: Zoomed view (0-0.5s) - Top
-subplot(2, 1, 1);
+% Subplot 1: Full simulation time (0-30s) - Top
+subplot(3, 1, 1);
 hold on;
 for idx = 1:length(activeBuses)
     k = activeBuses(idx);
@@ -79,33 +79,47 @@ for idx = 1:length(activeBuses)
     end
 end
 hold off;
-xlabel('Time [s]');
-ylabel('|v_{dq}| [pu]');
-title('Voltage magnitude');
-legend('show', 'Location', 'southeast');
-grid on;
-xlim([0 0.5]);
-ylim([0 1.2]);
-
-% Subplot 2: Full view (0-30s) - Bottom
-subplot(2, 1, 2);
-hold on;
-for idx = 1:length(activeBuses)
-    k = activeBuses(idx);
-    if ~isempty(v_magnitudes{idx})
-        plot(t, v_magnitudes{idx}, 'LineWidth', 1.5, 'DisplayName', ['Bus ' num2str(k)]);
-    end
-end
-hold off;
-xlabel('Time [s]');
-ylabel('|v_{dq}| [pu]');
-%title(sprintf('Voltage magnitude (full: 0-%gs)', t_end));
+ylabel('Voltage Magnitude [p.u.]');
+title('Voltage Magnitude (full sim time)');
 legend('show', 'Location', 'southeast');
 grid on;
 xlim([0 t_end]);
 ylim([0 1.2]);
 
-fprintf('Trajectory plot created (2 subplots).\n');
+% Subplot 2: Short circuit zoomed view (0-0.5s) - Middle
+subplot(3, 1, 2);
+hold on;
+for idx = 1:length(activeBuses)
+    k = activeBuses(idx);
+    if ~isempty(v_magnitudes{idx})
+        plot(t, v_magnitudes{idx}, 'LineWidth', 1.5, 'DisplayName', ['Bus ' num2str(k)]);
+    end
+end
+hold off;
+ylabel('Voltage Magnitude [p.u.]');
+title('Short Circuit');
+grid on;
+xlim([0 0.5]);
+ylim([0 1.2]);
+
+% Subplot 3: EMT transients after clearing (0.199-0.204s) - Bottom
+subplot(3, 1, 3);
+hold on;
+for idx = 1:length(activeBuses)
+    k = activeBuses(idx);
+    if ~isempty(v_magnitudes{idx})
+        plot(t, v_magnitudes{idx}, 'LineWidth', 1.5, 'DisplayName', ['Bus ' num2str(k)]);
+    end
+end
+hold off;
+xlabel('Time [s]');
+ylabel('Voltage Magnitude [p.u.]');
+title('EMT Transients after fault clearing');
+grid on;
+xlim([0.199 0.204]);
+ylim([0.55 1.65]);
+
+fprintf('Trajectory plot created (3 subplots).\n');
 
 %% Save all open figures
 allFigs = findall(0, 'Type', 'figure');

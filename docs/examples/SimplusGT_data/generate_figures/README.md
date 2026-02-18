@@ -50,6 +50,14 @@ SimplusGT/
 └── ...
 ```
 
+## Configuration
+
+### Sample Frequency
+
+To capture the full EMT transients (e.g. the fast oscillations immediately after fault clearing),
+the sample frequency must be increased. In the SimplusGT Excel configuration file, go to the
+**Basic** tab and change the sample frequency from `2.5e4` to `2.5e5`.
+
 ## Generating Figures
 
 Navigate to the SimplusGT root directory in MATLAB, then run the following scripts **in order**:
