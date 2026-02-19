@@ -1,6 +1,6 @@
 module ComposableInverter
 
-using ModelingToolkit: ModelingToolkit, @named, simplify, t_nounits as t, D_nounits as Dt,
+using ModelingToolkit: ModelingToolkit, @named, t_nounits as t, D_nounits as Dt,
                        @component
 # needed for @mtkmodel
 using ModelingToolkit: @mtkmodel, @variables, @parameters, @unpack, Num, System, Equation, connect, setmetadata

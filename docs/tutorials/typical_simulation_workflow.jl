@@ -52,7 +52,7 @@ inverter_model = Library.IdealDroopInverter(; name=:droop, Vset=1)
 nothing #hide #md
 #=
 This model is an equation-based/symbolic model representing the dynamics.
-It is based on the great [ModelingToolkit.jl Library](https://mtk.sciml.ai/stable/).
+It is based on the great [ModelingToolkit.jl Library](https://github.com/SciML/ModelingToolkit.jl).
 
 **Second**: we build a ["Bus Model"](@ref MTKBus-Interface), which connects
 the injector to a Busbar.
@@ -172,7 +172,7 @@ in the end, the whole network is just a big DAE system of the form
 ```
 where $\mathbf{x}$ are the states and $\mathbf{p}$ the parameters.
 This is very important to keep in mind, because it allows us to integrate seamlessly with the whole SciML ecosystem and,
-most importantly, [DifferentialEquations.jl](https://diffeq.sciml.ai/stable/).
+most importantly, [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/).
 
 =#
 @assert dim(nw) == 7 #hide
