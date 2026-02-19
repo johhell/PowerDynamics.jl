@@ -37,9 +37,15 @@ for dir in (example_dir, tutorial_dir)
 end
 
 kwargs = (;
-    modules=[PowerDynamics, PowerDynamics.Library],
+    # linear_analysis must run before ieee39_part4, because loading SciMLSensitivity
+    # (used in part4) before linear_analysis breaks the linear analysis examples.
+    # vs_and_cs_models.md also uses initialize_from_pf, so it needs to run before
+    # ieee39_part4 too.
+    expandfirst = ["generated/linear_analysis.md", "vs_and_cs_models.md"],
+    modules=[PowerDynamics, PowerDynamics.Library, PowerDynamics.Library.ComposableInverter],
     authors="Hans Würfel, Tim Kittel, Jan Liße, Sabine Auer, Anton Plietzsch and contributors",
     sitename="PowerDynamics.jl",
+    build=haskey(ENV, "DOCUMENTER_DRAFT") ? "build_draft" : "build",
     linkcheck=true,
     pagesonly=true,
     plugins=[links],
@@ -53,6 +59,7 @@ kwargs = (;
         "Modeling Concepts" => "ModelingConcepts.md",
         "Initialization" => "initialization.md",
         "Component Library" => "Library.md",
+        "vs_and_cs_models.md",
         "Tutorials" => [
             "Julia Setup for New Users" => "julia_setup.md",
             "Getting Started" => "generated/getting_started.md",
@@ -66,6 +73,7 @@ kwargs = (;
             "IEEE39 Part II: Initialization" => "generated/ieee39_part2.md",
             "IEEE39 Part III: Simulation" => "generated/ieee39_part3.md",
             "IEEE39 Part IV: Parameter Tuning" => "generated/ieee39_part4.md",
+            "Linear Analysis of 4-Bus EMT System" => "generated/linear_analysis.md",
             "EMT Toymodel" => "generated/emt_toymodel.md",
             "Zero-Impedance Circuit Breaker" => "generated/zero_imp_breaker.md",
         ],
@@ -77,7 +85,7 @@ kwargs = (;
         r"^\.\./assets/OpenIPSL_valid/.*\.png$",  # Match ../assets/OpenIPSL_valid/*.png
         "https://marketplace.visualstudio.com/items?itemName=julialang.language-julia", # curl blocked?
         ],
-    warnonly=[:missing_docs, :docs_block],
+    warnonly=[:missing_docs],
 )
 kwargs_warnonly = (; kwargs..., warnonly=true)
 

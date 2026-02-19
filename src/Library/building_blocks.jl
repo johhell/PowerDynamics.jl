@@ -58,7 +58,9 @@ SimpleLag block
 ```
 Additional structural parameters:
 - `guess=0`/`default`: initial guess/default for the internal state (equals output in steady state)
-- `allowzeroT`: if true, the lag is be bypassed when T=0 (this does not reduce the model order)
+- `allowzeroT`: if true, the lag is bypassed when T=0 (this does not reduce the model order)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel SimpleLag begin
     @structural_parameters begin
@@ -97,6 +99,8 @@ SimpleLead block
 
 This block directly uses `Dt(in)`, therefore it does not add additional states
 but may not be used in all scenarios!
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel SimpleLead begin
     @structural_parameters begin
@@ -224,7 +228,7 @@ with_saturation_config(f, method::Symbol; kwargs...) = with_saturation_config(f,
         # only used for callbacks
         _callback_sat_max, [guess=0, description="internal callback parameter indicating upper saturation state"]
         _callback_sat_min, [guess=0, description="internal callback parameter indicating lower saturation state"]
-        # onlye used for rhs_soft and complementary
+        # only used for rhs_soft and complementary
         ϵ=config.regularization, [description="Regularization parameter for saturation handling"]
     end
     @variables begin
@@ -251,7 +255,7 @@ with_saturation_config(f, method::Symbol; kwargs...) = with_saturation_config(f,
         forcing_eqs
     ]
 
-    # integrator eqations T*D(x) ~ forcing depend on config method
+    # integrator equations T*D(x) ~ forcing depend on config method
     if config.method == :callback
         neweqs = [
             T*Dt(x) ~ (1 - _callback_sat_max - _callback_sat_min) * forcing
@@ -324,7 +328,7 @@ function _soft_clamped_rhs(u, x, xmin, xmax, ε)
     return ifelse(u > 0, u * s_hi, u * s_lo)
 end
 function _hard_clamped_rhs(u, x, xmin, xmax)
-    # make compatible with sparacity tracing
+    # make compatible with sparsity tracing
     if any(x -> x isa GradientTracer, (u, x, xmin, xmax))
         return u+x+xmin+xmax
     end
@@ -416,6 +420,8 @@ outMin __/
 
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals output in steady state)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 SimpleLagLim(; kwargs...) = LimitedIntegratorBase(; type=:lag, kwargs...)
 
@@ -435,6 +441,8 @@ outMin __/
 
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals output in steady state)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 LimIntegrator(; kwargs...) = LimitedIntegratorBase(; type=:int, T=1, kwargs...)
 
@@ -598,7 +606,7 @@ function _SatLim_condition(_out, u, p, _)
             # when not in saturation, set out[3] at Inf
             # This might be problematic if
             # - lower lim is hit (i.e. forcing is negative)
-            # - next round, forcing is still negativ so we have a discrete jump from Inf to small negativ, which is a zero crossing
+            # - next round, forcing is still negative so we have a discrete jump from Inf to small negative, which is a zero crossing
             # - but it seems like this non-continuous crossing is not actually registered as a crossing? Maybe because t=t in both cases?
             _out[3] = Inf
         end
@@ -613,6 +621,8 @@ Simple gain block
 ╶───┤ K ├────╴
     ╰───╯
 ```
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel SimpleGain begin
     @structural_parameters begin
@@ -628,7 +638,7 @@ Simple gain block
 end
 
 """
-Derivative approximation block. Modeld after Modelica.Blocks.Continuous.Derivative
+Derivative approximation block. Modeled after Modelica.Blocks.Continuous.Derivative
 
 ```asciiart
     ╭─────────╮
@@ -640,6 +650,8 @@ Derivative approximation block. Modeld after Modelica.Blocks.Continuous.Derivati
 
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals input in steady state)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel Derivative begin
     @structural_parameters begin
@@ -671,7 +683,9 @@ LeadLag block
 
 Additional structural parameters:
 - `guess=0`: initial guess for the internal state (equals input in steady state)
-- `allowzeroT`: if true, the lead-lag is be bypassed when T1=0 and T2=0 (this does not reduce the model order)
+- `allowzeroT`: if true, the lead-lag is bypassed when T1=0 and T2=0 (this does not reduce the model order)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel LeadLag begin
     @structural_parameters begin
@@ -718,6 +732,8 @@ A dead zone nonlinearity that outputs zero when the input is within the specifie
 Structural parameters:
 - `uMax`: Upper dead zone limit
 - `uMin=-uMax`: Lower dead zone limit (defaults to -uMax for symmetric dead zone)
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
 """
 @mtkmodel DeadZone begin
     @structural_parameters begin

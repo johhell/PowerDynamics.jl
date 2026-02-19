@@ -202,6 +202,6 @@ if isdefined(Main, :EXPORT_FIGURES) && Main.EXPORT_FIGURES
 
         fig
 
-        save(joinpath(pkgdir(PowerDynamics),"docs","src","assets","OpenIPSL_valid","Htion.png"), fig)
+        save(joinpath(pkgdir(PowerDynamics),"docs","src","assets","OpenIPSL_valid","HYGOV.png"), fig)
     end
 end

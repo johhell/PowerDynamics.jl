@@ -1,3 +1,10 @@
+"""
+    PiLine_fault
+
+Pi-section branch with a configurable mid-point fault (short-circuit or impedance-to-ground).
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel PiLine_fault begin
     @parameters begin
         R, [description="Resistance of branch in pu (base unclear?)"]

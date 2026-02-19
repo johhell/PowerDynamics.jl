@@ -21,6 +21,7 @@ function pfSlack(; V=missing, δ=missing, u_r=missing, u_i=missing, name=:slackb
     mtkbus = MTKBus(slack; name)
     b = compile_bus(mtkbus; kwargs...)
     set_voltage!(b, u_r + im * u_i)
+    set_current!(b, -1.0) # probably injection
     b
 end
 
@@ -37,6 +38,10 @@ function pfPV(; P, V, name=:pvbus, kwargs...)
     mtkbus = MTKBus(pv; name)
     b = compile_bus(mtkbus; kwargs...)
     set_voltage!(b; mag=V, arg=0)
+    i = P/V
+    set_current!(b, -i)
+    set_default!(b, :pv₊terminal₊i_r, i) # necessary for current source
+    set_default!(b, :pv₊terminal₊i_i, 0)
     b
 end
 
@@ -53,6 +58,21 @@ function pfPQ(; P=0, Q=0, name=:pqbus, kwargs...)
     mtkbus = MTKBus(pq; name)
     b = compile_bus(mtkbus; kwargs...)
     set_voltage!(b; mag=1, arg=0)
+    set_current!(b; P, Q)
+    b
+end
+
+"""
+    pfShunt(; B, G=0, name=:Shunt)
+
+Create a bus with pure static shunt admittance for power flow analysis.
+"""
+function pfShunt(; B, G=0, name=:Shunt, kwargs...)
+    @named shunt = Library.StaticShunt(; B, G)
+    mtkbus = MTKBus(shunt; name)
+    b = compile_bus(mtkbus; kwargs...)
+    set_voltage!(b; mag=1, arg=0)
+    set_current!(b, -(G + im*B))
     b
 end
 
@@ -180,6 +200,7 @@ Overwrites any existing power flow model.
 See also [`delete_pfmodel!`](@ref), [`get_pfmodel`](@ref).
 """
 function set_pfmodel!(c::NetworkDynamics.ComponentModel, model)
+    check_pfmodel(model, c)
     set_metadata!(c, :pfmodel, model)
 end
 set_pfmodel!(nw::Network, idx::NetworkDynamics.VCIndex, model) = set_pfmodel!(getcomp(nw, idx), model)
@@ -239,7 +260,7 @@ function solve_powerflow(
     alg = nothing,
     kwargs...
 )
-    # don't enforce this, check happes in `powerflow_model`
+    # don't enforce this, check happens in `powerflow_model`
     # pfnw.mass_matrix == LinearAlgebra.UniformScaling(0) || error("Powerflow model must have a mass matrix of 0!")
 
     if isnothing(alg)
@@ -285,6 +306,7 @@ end
 initialize_from_pf_docstring = raw"""
     initialize_from_pf[!](
         nw::Network;
+        default_overrides=nothing,
         verbose = true,
         subverbose = false,
         pfnw = powerflow_model(nw),
@@ -317,6 +339,7 @@ state again, as it is stored in the metadata.
 
 ## Parameters
 - `nw`: The dynamic network model to initialize
+- `default_overrides`: Is added *in addition* to the interface values extracted from the power flow solution. This allows you to change parameters for example.
 - `verbose`: Whether to print information about the power flow solution (default: true)
 - `subverbose`: Whether to print detailed information during component initialization (default: false). Can be Vector [VIndex(1), EIndex(3), ...] for selective output
 - `pfnw`: Power flow network model (default: created from `nw` using `powerflow_model`)
@@ -401,3 +424,19 @@ function show_powerflow(s::NWState)
     DataFrame(dict)
 end
 show_powerflow(nw::Network) = show_powerflow(NWState(nw))
+
+function check_pfmodel(pfm, m)
+    in = NetworkDynamics.insym_flat(m)
+    pfin = NetworkDynamics.insym_flat(pfm)
+    out = NetworkDynamics.outsym_flat(m)
+    pfout = NetworkDynamics.outsym_flat(pfm)
+    if in != pfin || out != pfout
+        @warn "Power flow model $(pfm.name) does not have the same input/output \
+               variables as the original model $(m.name)! \n\
+               - Model inputs:   $in\n\
+               - PF mod inputs:  $pfin\n\
+               - Model outputs:  $out\n\
+               - PF mod outputs: $pfout\n\
+               Maybe you're trying to attach an voltage source pf model to a current source component?"
+    end
+end

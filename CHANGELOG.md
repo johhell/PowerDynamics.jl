@@ -1,14 +1,22 @@
 # PowerDynamics.jl Changelog
 
 ## Version 4.4.0 Changelog
+- **New component: ComposableInverter**: Added composable grid-forming (GFM) and grid-following (GFL) inverter models with filter blocks (`LFilter`, `LCFilter`, `LCLFilter`), controller blocks (`CC1`, `VC`, `CC2`), PLL models, and composite models (`DroopInverter`, `SimpleGFL`, `SimpleGFLDC`)
 - **New component: Breaker**: Added `Breaker` component for modeling switchable zero-impedance connections between buses. Includes example demonstrating breaker opening and synchronized reclosing.
+- **New component: DynamicSeriesRLBranch**: Dynamic RL transmission line in rotating dq-frame with optional transformer ratios
+- **New shunt models**: Added `StaticShunt`, `DynamicCShunt`, and `DynamicParallelRCShunt` for bus shunt modeling
 - **New load model: ConstantCurrentLoad**: Added constant current magnitude load model with configurable phase offset relative to voltage
 - **New compile_bus option**: Added `current_source` keyword argument to `compile_bus` to support injector nodes via loopback connections (switches from current-in/voltage-out to voltage-in/current-out)
+- **New utility functions**: Added `unwrap_deg` and `unwrap_rad` for continuous phase trajectories
+- **New saturation methods**: `LimIntegrator` and `SimpleLagLim` now support four saturation methods: `:callback` (original), `:complementary`, `:rhs_hard`, and `:rhs_soft`, configurable via `SaturationConfig`
+- **New documentation**: Added linear analysis tutorial (eigenvalue analysis, Bode plots, 4-bus validation against SimplusGT), breaker tutorial, and conceptual page on voltage/current source modeling
 - **Improved building blocks documentation**: Added comprehensive docstrings with ASCII art diagrams for all control system building blocks (`SimpleLag`, `SimpleLead`, `LeadLag`, `Derivative`, `SimpleGain`, `SimpleLagLim`, `LimIntegrator`, `DeadZone`)
 - **New building block features**: Added `allowzeroT` structural parameter to `SimpleLag` and `LeadLag` blocks to optionally bypass lag/lead when time constants are zero
 - **Exported building blocks**: All building blocks and saturation functions are now properly exported and documented in the Library API documentation
 - **Enhanced limited integrator callbacks**: Refactored to use NetworkDynamics v0.10.12's `ComponentPostprocessing` metadata for cleaner callback attachment
 - **Improved power flow solving**: Added sparsity support for more efficient power flow computation
+- **Bug fix: EXP_SE formula**: Corrected the exponential saturation function to properly interpolate through both data points
+- **Bug fix: EMT toymodel sign convention**: Fixed capacitor and RL line equations to use correct injector sign convention
 - **Added saturation function tests**: New tests verify that `QUAD_SE` and `EXP_SE` correctly pass through specified points
 - **Renamed saturation functions** (Library): `PSSE_QUAD_SE` → `QUAD_SE`, `PSSE_EXP_SE` → `EXP_SE`. The old names are no longer available. Users should update their code to use the new names.
 - **Removed global postprocessing system**: The global `POSTPROCESSING_FUNCTIONS` array and `register_postprocessing_function!()` function have been removed. Component postprocessing is now handled via `ComponentPostprocessing` metadata in ModelingToolkit models. This change only affects users who were manually registering postprocessing functions.
@@ -19,7 +27,7 @@
   states.
 
 ## Version 4.2.0 Changelog
-- [#230](https://github.com/JuliaDynamics/PowerDynamics.jl/pull/230): 
+- [#230](https://github.com/JuliaDynamics/PowerDynamics.jl/pull/230):
   - deprecate `Bus(...)` → `compile_bus(...)` and `Line(...)` → `compile_line(...)`
   - remove `PowerDynamicsTesting` as separate package and just load it as module (less env hassle)
   - add new `asciiart` code style for documentation

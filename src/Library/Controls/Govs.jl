@@ -1,3 +1,10 @@
+"""
+    GovFixed
+
+Trivial governor that holds the mechanical torque at a fixed parameter value.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel GovFixed begin
     @components begin
         τ_m = RealOutput()
@@ -13,6 +20,13 @@ end
 _clamp(u, u_min, u_max) = max(min(u, u_max), u_min)
 
 # from Milano P. 359
+"""
+    TurbineGovTypeI
+
+Type-I turbine governor with droop, servo, and transient gain reduction stages (Milano p. 359).
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel TurbineGovTypeI begin
     @structural_parameters begin
         ω_ref_input=false
@@ -67,6 +81,13 @@ _clamp(u, u_min, u_max) = max(min(u, u_max), u_min)
 end
 
 # from PSD.jl https://nrel-sienna.github.io/PowerSimulationsDynamics.jl/stable/component_models/turbine_gov/#TGOV1-[SteamTurbineGov1]
+"""
+    TGOV1
+
+TGOV1 steam turbine governor with droop, valve limiter, and reheater.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel TGOV1 begin
     @structural_parameters begin
         ω_ref_input=false

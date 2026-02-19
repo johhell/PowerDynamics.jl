@@ -1,3 +1,10 @@
+"""
+    SauerPaiMachine
+
+Machine Model as described in the book of Sauer and Pai.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel SauerPaiMachine begin
     @structural_parameters begin
         vf_input = true
@@ -49,8 +56,8 @@
         end
     end
     @variables begin
-        ψ_d(t), [description="d-axis flux linkage"]
-        ψ_q(t), [description="q-axis flux linkage"]
+        ψ_d(t), [guess=1, description="d-axis flux linkage"]
+        ψ_q(t), [guess=0, description="q-axis flux linkage"]
         ψ″_d(t), [guess=1, description="flux linkage assosciated with X″_d"]
         ψ″_q(t), [guess=0, description="flux linkage assosciated with X″_q"]
         I_d(t), [guess=0, description="d-axis current"]

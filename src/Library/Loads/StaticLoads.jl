@@ -1,3 +1,10 @@
+"""
+    PQLoad
+
+Constant-power load that draws fixed active and reactive power regardless of voltage.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel PQLoad begin
     @parameters begin
         Pset, [description="Active Power demand"]
@@ -19,6 +26,13 @@
     end
 end
 
+"""
+    VoltageDependentLoad
+
+Load whose active and reactive power scale as a polynomial function of voltage magnitude.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel VoltageDependentLoad begin
     @parameters begin
         Pset, [guess=-1, description="Active Power demand"]
@@ -52,6 +66,13 @@ end
     end
 end
 
+"""
+    ConstantYLoad
+
+Constant-admittance (shunt Y) load drawing current proportional to the bus voltage.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel ConstantYLoad begin
     @structural_parameters begin
         allow_zero_conductance = false
@@ -91,6 +112,13 @@ end
 end
 
 # TODO: S_b for loads?
+"""
+    ZIPLoad
+
+ZIP load combining constant-impedance, constant-current, and constant-power fractions.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel ZIPLoad begin
     @parameters begin
         Pset, [description="Active Power at operation point [pu]"]
@@ -121,6 +149,13 @@ end
     end
 end
 
+"""
+    ConstantCurrentLoad
+
+Constant-current load drawing a fixed current magnitude at a configurable phase offset relative to the bus voltage.
+
+$(PowerDynamics.ref_source_file(@__FILE__, @__LINE__))
+"""
 @mtkmodel ConstantCurrentLoad begin
     @parameters begin
         Iset, [guess=-1, description="Current magnitude setpoint"]

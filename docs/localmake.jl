@@ -70,8 +70,10 @@ function draft_serving()
     ENV["DOCUMENTER_DRAFT"] = "true"
     servedocs(
         foldername=".",
+        buildfoldername="build_draft",
         literate=joinpath(@__DIR__, "examples"),
-        skip_dir=joinpath(@__DIR__, "src", "generated")
+        skip_dir=joinpath(@__DIR__, "src", "generated"),
+        port=8001,
     )
 end
 

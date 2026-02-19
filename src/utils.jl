@@ -1,79 +1,3 @@
-struct CustomMetadata end
-
-"""
-This type wraps the default constructor of a ModelingToolkit.Model and allows to attach metadata to it.
-Two types of metadata is possible:
-  - a "name" field which will become the "name" field of the system
-  - a named tuple with aribrary fields which will become the "metadata" field of the system
-"""
-struct ModelMetadataConstructor{F, NT}
-    original_constructor::F
-    name::Union{Nothing, Symbol}
-    metadata::NT
-end
-function ModelMetadataConstructor(model::ModelingToolkit.Model, metadata::NamedTuple)
-    name, finalmeta = _split_name(metadata)
-    ModelMetadataConstructor(model.f, name, finalmeta)
-end
-function ModelMetadataConstructor(model::ModelingToolkit.Model{<:ModelMetadataConstructor}, metadata::NamedTuple)
-    mc = model.f
-    oldmeta = _full_metadata(mc)
-    newmeta = merge(oldmeta, metadata)
-    name, finalmeta = _split_name(newmeta)
-    ModelMetadataConstructor(mc.original_constructor, name, finalmeta)
-end
-function _split_name(metadata)
-    if haskey(metadata, :name)
-        name = metadata.name
-        final_metadata = NamedTuple{filter(!isequal(:name), keys(metadata))}(metadata)
-    else
-        name = nothing
-        final_metadata = metadata
-    end
-    return name, final_metadata
-end
-_full_metadata(mc::ModelMetadataConstructor) = (; name=mc.name, mc.metadata...)
-
-function (mc::ModelMetadataConstructor)(args...; kwargs...)
-    sys = if isnothing(mc.name)
-        mc.original_constructor(args...; kwargs...)
-    else
-        mc.original_constructor(args...; name=mc.name, kwargs...)
-    end
-    sys = ModelingToolkit.setmetadata(sys, CustomMetadata, mc.metadata)
-    sys
-end
-
-function get_custom_metadata(sys::System)
-    md = ModelingToolkit.getmetadata(sys, CustomMetadata, nothing)
-    if isnothing(md)
-        error("No custom metadata attached to the system. Use `@attach_metadata!` to attach metadata to the @mtkmodel")
-    end
-    md
-end
-
-get_custom_metadata(sys::System, key) = get_custom_metadata(sys)[key]
-
-"""
-    @attach_metadata! Model metadata
-
-Allows you to attach additonal metadata to a `Model` which was previously defined using `@mtkmodel`.
-The metadata needs to be in the form of a named tuple `(; name=..., field1=..., field2=...)`.
-
-If `name` is present in the metadata, it will be used as the default name of the system and stripped from the metadata.
-The rest of the named tuple will be attachde to the `System`s metadata.
-"""
-macro attach_metadata!(model, metadata)
-     quote
-         $(esc(model)) = _attach_metadata($(esc(model)), $(esc(metadata)))
-     end
-end
-function _attach_metadata(model::ModelingToolkit.Model, metadata::NamedTuple)
-    mc = ModelMetadataConstructor(model, metadata)
-    @set model.f = mc
-end
-
-
 function freep(sys::System)
     return filter(p -> !haskey(ModelingToolkit.defaults(sys), p), ModelingToolkit.parameters(sys))
 end
@@ -106,7 +30,7 @@ function set_current!(cf::VertexModel; P, Q)
     set_current!(cf, -i)
 end
 # set_current!(cf::VertexModel; mag, arg) = set_current!(cf, mag * exp(im * arg))
-function set_current!(cf::VertexModel, c::Complex)
+function set_current!(cf::VertexModel, c::Number)
     set_default!(cf, :busbar₊i_r, real(c))
     set_default!(cf, :busbar₊i_i, imag(c))
     c
@@ -174,4 +98,68 @@ function refine_timeseries(ts, factor=10)
         end
     end
     push!(newts, ts[end])
+end
+
+
+"""
+    unwrap_deg(angles)
+
+Unwrap phase angles in degrees. Detects and corrects discontinuities
+greater than 180° to produce continuous phase trajectories.
+
+Useful for Bode plots and other frequency response visualizations.
+"""
+unwrap_deg(angles) = _unwrap(angles, 360.0)
+
+"""
+    unwrap_rad(angles)
+
+Unwrap phase angles in radians. Detects and corrects discontinuities
+greater than π to produce continuous phase trajectories.
+"""
+unwrap_rad(angles) = _unwrap(angles, 2π)
+
+function _unwrap(angles, range)
+    unwrapped = similar(angles)
+    unwrapped[1] = angles[1]
+
+    for i in 2:length(angles)
+        diff = angles[i] - unwrapped[i-1]
+        # Round to nearest multiple of range and subtract to unwrap
+        correction = round(diff / range) * range
+        unwrapped[i] = angles[i] - correction
+    end
+
+    unwrapped
+end
+
+const GITHUB_REPO = "JuliaEnergy/PowerDynamics.jl"
+const GITHUB_REF = let
+    if haskey(ENV, "GITHUB_REF_NAME")
+        ref_name = ENV["GITHUB_REF_NAME"]
+        # PR refs look like "253/merge" — not valid for blob links; use commit SHA instead
+        if occursin(r"^\d+/merge$", ref_name)
+            get(ENV, "GITHUB_SHA", "main")
+        else
+            ref_name
+        end
+    else
+        projecttoml = read(joinpath(pkgdir(PowerDynamics), "Project.toml"), String)
+        versionstring = match(r"version\s?=\s?\"(.*)\"", projecttoml)[1]
+        "v"*versionstring
+    end
+end
+function ref_source_file(f, line)
+    subf = match(r"PowerDynamics.*/(src/.*)", f)[1]
+
+    link = "https://github.com/$GITHUB_REPO/blob/$GITHUB_REF/$subf#L$(line+2)"
+    doctext = "For a concrete list of variables and parameters please check the model source"
+    if haskey(ENV, "GITHUB_ACTIONS")
+        # for online docs
+        doctext *= " on [GitHub]($link)."
+    else
+        doctext *= "\n - online [$link]($link)"
+        doctext *= "\n - local @ $f:$line"
+    end
+    doctext
 end
