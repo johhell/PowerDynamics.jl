@@ -85,7 +85,7 @@ kwargs = (;
         r"^\.\./assets/OpenIPSL_valid/.*\.png$",  # Match ../assets/OpenIPSL_valid/*.png
         "https://marketplace.visualstudio.com/items?itemName=julialang.language-julia", # curl blocked?
         ],
-    warnonly=[:docs_block],
+    warnonly=[:missing_docs],
 )
 kwargs_warnonly = (; kwargs..., warnonly=true)
 
