@@ -858,8 +858,8 @@ The most impactful parameters are:
 Let's check our eigenvalues after initializing the system again with those parameters increased by a factor of 3:
 =#
 default_overrides = Dict(
-    VIndex(:gfm_bus, :droop₊vsrc₊VC_KP) => 3.0*s0.v[:gfm_bus, :droop₊vsrc₊VC_KP],
-    VIndex(:gfm_bus, :droop₊vsrc₊VC_KI) => 3.0*s0.v[:gfm_bus, :droop₊vsrc₊VC_KI]
+    VIndex(5, :droop₊vsrc₊VC_KP) => 3.0*s0.v[:gfm_bus, :droop₊vsrc₊VC_KP],
+    VIndex(5, :droop₊vsrc₊VC_KI) => 3.0*s0.v[:gfm_bus, :droop₊vsrc₊VC_KI]
 )
 s0_tuned = initialize_from_pf(nw; pfs, default_overrides, tol=1e-7, nwtol=1e-7)
 nothing # hide
